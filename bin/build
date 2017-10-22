@@ -1,0 +1,3 @@
+#!/bin/sh
+rm build/rebalance.zip
+zip -r build/rebalance.zip virtualenv/bin/activate_this.py virtualenv/lib/python3.6/site-packages/numpy virtualenv/lib/python3.6/site-packages/pandas virtualenv/lib/python3.6/site-packages/cvxopt __main__.py

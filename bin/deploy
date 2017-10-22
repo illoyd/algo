@@ -1,0 +1,2 @@
+#!/bin/sh
+bx wsk action create rebalance --kind python:3 rebalance.zip
