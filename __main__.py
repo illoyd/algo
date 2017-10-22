@@ -6,6 +6,9 @@ import math
 import cvxopt as opt
 import cvxopt.solvers as optsolvers
 import datetime
+import json
+import requests
+import dateutil
 
 ##
 # Main entry point for this cloud function
@@ -41,33 +44,89 @@ def main(args = {}):
   # Perform buys
 
   # Boring stuff!
-  name = args.get('name', 'stranger')
-  return { 'message': f"Hello {name}!" }
+  return portfolio_delta
+
+
+##
+# Calculate the optimal Sharpe portfolio
+def calculate_target_portfolio_weights(prices):
+  return pd.DataFrame()
+
+
+##
+# Calculate the target portfolio units
+def calculate_target_portfolio(weights, prices, capital):
+  return pd.DataFrame()
 
 
 ##
 # The Robinhood interface, built from the ground up sadly!
 class Robinhood(object):
-  def __init__(self, username = None, password = None):
+  def __init__(self, username = None, password = None, endpoint = 'https://api.robinhood.com'):
     self.token = None
+    self.endpoint = endpoint
     if username:
       self.login(username, password)
+
+  def get(self, path, params = {}, headers = {}):
+    path = self.endpoint + path
+
+    # Add default headers
+    headers['Accept'] = 'application/json'
+
+    # Add token, if available
+    if self.token:
+      headers['Authorization'] = 'Token ' + self.token
+
+    # Request!
+    return requests.get(path, params=params)
+
+  def post(self, path, params = {}, headers = {}):
+    path = self.endpoint + path
+
+    # Add default headers
+    headers['Accept'] = 'application/json'
+
+    # Add token, if available
+    if self.token:
+      headers['Authorization'] = 'Token ' + self.token
+
+    # Request!
+    return requests.get(path, params=params)
+
+
 
   ##
   # Perform login to Robinhood, and save the returned token
   # @return Nothing
   def login(self, username, password):
-    # Get token
+    # Prepare sign in
     self.token = None
     pass
 
   ##
   # Get quotes
   # @return A pandas dataframe of symbols and prices
-  def quotes(self, symbols):
-    # TODO
-    q = pandas.Dataframe()
-    return q
+  def historical_quotes(self, symbols):
+
+    # If no symbols passed, abort
+    if not symbols:
+      return pd.DataFrame()
+
+    # Query API
+    symbol_list = ','.join(symbols)
+    response = self.get('/quotes/historicals/', { 'symbols': symbol_list, 'interval': 'day' }).json()
+
+    # Process response
+    quotes = []
+    for entry in response.get('results', []):
+      symbol = entry['symbol']
+      prices = list(map(lambda e: float(e['close_price']), entry['historicals']))
+      dates = list(map(lambda e: dateutil.parser.parse(e['begins_at']).date(), entry['historicals']))
+      s = pd.Series(prices, index=dates, name=symbol)
+      quotes.append(s)
+
+    return pd.concat(quotes, axis=1)
 
   ##
   # Get watchlist
@@ -80,10 +139,18 @@ class Robinhood(object):
   ##
   # Get current portfolio
   # @return A
-  def portfolio(self):
+  def current_portfolio(self):
     # TODO
-    p = pandas.Dataframe()
+    p = pd.DataFrame()
     return p
+
+  ##
+  # Get the current total portfolio size (all assets)
+  # @return The dollar value of the asset
+  def current_capital(self):
+    # TODO
+    capital = 0.0
+    return capital
 
   ##
   # Issue a buy order
