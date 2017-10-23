@@ -105,7 +105,7 @@ class Robinhood(object):
   ##
   # Get quotes
   # @return A pandas dataframe of symbols and prices
-  def historical_quotes(self, symbols):
+  def historical_quotes(self, *symbols):
 
     # If no symbols passed, abort
     if not symbols:
