@@ -68,28 +68,28 @@ class Robinhood(object):
     if username:
       self.login(username, password)
 
+  def default_headers(self):
+    headers = { 'Accept': 'application/json' }
+    if self.token:
+      headers['Authorization'] = 'Token ' + self.token
+    return headers
+
   def get(self, path, params = {}, headers = {}):
+    # Build path
     path = self.endpoint + path
 
     # Add default headers
-    headers['Accept'] = 'application/json'
-
-    # Add token, if available
-    if self.token:
-      headers['Authorization'] = 'Token ' + self.token
+    headers.update(self.default_headers())
 
     # Request!
     return requests.get(path, params=params, headers=headers)
 
   def post(self, path, params = {}, headers = {}):
+    # Build path
     path = self.endpoint + path
 
     # Add default headers
-    headers['Accept'] = 'application/json'
-
-    # Add token, if available
-    if self.token:
-      headers['Authorization'] = 'Token ' + self.token
+    headers.update(self.default_headers())
 
     # Request!
     return requests.get(path, params=params, headers=headers)
