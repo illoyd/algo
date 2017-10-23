@@ -9,6 +9,9 @@ import datetime
 import json
 import requests
 import dateutil
+import re
+
+import robinhood
 
 ##
 # Main entry point for this cloud function
@@ -59,9 +62,11 @@ def calculate_target_portfolio(weights, prices, capital):
   return pd.DataFrame()
 
 
+import apiclient
+
 ##
 # The Robinhood interface, built from the ground up sadly!
-class Robinhood(object):
+class Robinhood(apiclient.BasicClient):
   def __init__(self, username = None, password = None, endpoint = 'https://api.robinhood.com'):
     self.token = None
     self.endpoint = endpoint
@@ -117,14 +122,14 @@ class Robinhood(object):
   ##
   # Get quotes
   # @return A pandas dataframe of symbols and prices
-  def historical_quotes(self, *symbols):
+  def historical_quotes(self, *symbols_or_ids):
 
     # If no symbols passed, abort
-    if not symbols:
+    if not symbols_or_ids:
       return pd.DataFrame()
 
     # Query API
-    symbol_list = ','.join(symbols)
+    symbol_list = ','.join(symbols_or_ids)
     response = self.get('/quotes/historicals/', { 'symbols': symbol_list, 'interval': 'day' }).json()
 
     # Process response
@@ -141,16 +146,32 @@ class Robinhood(object):
   ##
   # Get watchlist
   # @return An array of symbols included in this watchlist
-  def watchlist(self, list="Default"):
-    # TODO
-    w = []
+  def watchlist(self, name="Default"):
+    # Get watchlist
+    response = self.get('/watchlists/'+name+'/').json()
+
+    # For every watchlist entry, look up the instrument to get the symbol
+    w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
     return w
+
+  ##
+  # Get the instrument details
+  def instrument(self, symbol_or_id):
+    # Extract an ID from a string, if available, and use as the search term
+    match = re.match('https://api.robinhood.com/instruments/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/?', symbol_or_id)
+    if match:
+      symbol_or_id = match[1]
+
+    return self.get('/instruments/' + symbol_or_id).json()
 
   ##
   # Get current portfolio
   # @return A
   def current_portfolio(self):
     # TODO
+    portfolio = self.get('/portfolios').json()
+    print(portfolio)
+
     p = pd.DataFrame()
     return p
 
