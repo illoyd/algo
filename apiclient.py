@@ -25,7 +25,7 @@ class BasicClient(object):
     return '/'.join([ self.base_endpoint, *uri ])
 
   def default_headers(self):
-    return {}
+    return { 'Accept': 'application/json' }
 
   def default_params(self):
     return {}
