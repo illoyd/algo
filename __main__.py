@@ -79,7 +79,7 @@ class Robinhood(object):
       headers['Authorization'] = 'Token ' + self.token
 
     # Request!
-    return requests.get(path, params=params)
+    return requests.get(path, params=params, headers=headers)
 
   def post(self, path, params = {}, headers = {}):
     path = self.endpoint + path
@@ -92,9 +92,7 @@ class Robinhood(object):
       headers['Authorization'] = 'Token ' + self.token
 
     # Request!
-    return requests.get(path, params=params)
-
-
+    return requests.get(path, params=params, headers=headers)
 
   ##
   # Perform login to Robinhood, and save the returned token
