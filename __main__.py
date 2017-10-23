@@ -84,7 +84,7 @@ class Robinhood(object):
     # Request!
     return requests.get(path, params=params, headers=headers)
 
-  def post(self, path, params = {}, headers = {}):
+  def post(self, path, params = {}, data = {}, headers = {}):
     # Build path
     path = self.endpoint + path
 
@@ -92,14 +92,26 @@ class Robinhood(object):
     headers.update(self.default_headers())
 
     # Request!
-    return requests.get(path, params=params, headers=headers)
+    return requests.post(path, data=data, headers=headers)
 
   ##
   # Perform login to Robinhood, and save the returned token
   # @return Nothing
   def login(self, username, password):
-    # Prepare sign in
-    self.token = None
+    # Save the username for reference
+    self.username = username
+
+    # Sign in
+    data = { 'username': self.username, 'password': password }
+    response = self.post('/api-token-auth/', data = data)
+
+    # Process response and save
+    self.token = response.json()['token']
+    pass
+
+  def logout(self):
+    self.post('/api-token-logout/')
+    self.username, self.token = None, None
     pass
 
   ##
