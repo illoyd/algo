@@ -85,9 +85,9 @@ class Client(apiclient.TokenClient):
   ##
   # Get current portfolio
   # @return A
-  def current_portfolio(self):
+  def portfolio(self):
     # TODO
-    portfolio = self.get('/portfolios').json()
+    portfolio = self.get(['accounts', self.account_id, 'portfolio'])
     print(portfolio)
 
     p = pd.DataFrame()
