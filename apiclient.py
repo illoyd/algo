@@ -8,11 +8,15 @@ class BasicResponse(object):
 
 class PaginatedResponse(BasicResponse):
 
-  def next():
-    return self.response['next']
+  def next(self):
+    return self.response.get('next')
 
-  def previous():
-    return self.response['previous']
+  def previous(self):
+    return self.response.get('previous')
+
+  def results(self):
+    return self.response.get('results', self.response)
+
 
 
 class BasicClient(object):
