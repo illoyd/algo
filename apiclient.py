@@ -1,9 +1,16 @@
 ##
 # Robinhood namespace
 
+import requests
+import os
+
 class BasicResponse(object):
   def __init__(self, response):
+    self.raw_response = response
     self.response = response.json()
+
+  def json(self):
+    return self.response
 
 
 class PaginatedResponse(BasicResponse):
@@ -18,10 +25,9 @@ class PaginatedResponse(BasicResponse):
     return self.response.get('results', self.response)
 
 
-
 class BasicClient(object):
 
-  def __init__(self, base_endpoint = 'https://api.robinhood.com'):
+  def __init__(self, base_endpoint = None):
     self.base_endpoint = base_endpoint
 
   def normalize_uri(self, *uri):
@@ -47,3 +53,19 @@ class BasicClient(object):
     headers = { **self.default_headers(), **headers }
     response = requests.post(uri, params=params, data=data, headers=headers)
     return response_class(response)
+
+  ##
+  # Take the first non-None value from a given list
+  def coalesce(self, *args):
+    return next((item for item in args if item is not None), None)
+
+class TokenClient(BasicClient):
+  def __init__(self, token = None, base_endpoint = None):
+    super().__init__(base_endpoint = base_endpoint)
+    self.token = token
+
+  def default_headers(self):
+    headers = super().default_headers()
+    if self.token:
+      headers['Authorization'] = 'Token ' + self.token
+    return headers

@@ -1,21 +1,21 @@
-
 import apiclient
+import requests
+import os
 
 ##
 # The Robinhood interface, built from the ground up sadly!
-class Client(apiclient.BasicClient):
-  def __init__(self, username = None, password = None, base_endpoint = 'https://api.robinhood.com'):
-    super().__init__(base_endpoint = base_endpoint)
-    self.token = None
-    self.endpoint = endpoint
-    if username:
-      self.login(username, password)
+class Client(apiclient.TokenClient):
+  def __init__(self, username = None, password = None, account_id = None, token = None, base_endpoint = 'https://api.robinhood.com'):
+    super().__init__(token = self.coalesce(token, os.environ.get('ROBINHOOD_TOKEN')), base_endpoint = base_endpoint)
 
-  def default_headers(self):
-    headers = super(Client, self).default_headers()
-    if self.token:
-      headers['Authorization'] = 'Token ' + self.token
-    return headers
+    # Coalesce to environment defaults
+    username = self.coalesce(username, os.environ.get('ROBINHOOD_USERNAME'))
+    password = self.coalesce(password, os.environ.get('ROBINHOOD_PASSWORD'))
+    account_id = self.coalesce(account_id, os.environ.get('ROBINHOOD_ACCOUNTID'))
+
+    # Perform login
+    if username and password:
+      self.login(username, password)
 
   ##
   # Perform login to Robinhood, and save the returned token
