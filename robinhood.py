@@ -1,6 +1,17 @@
-import apiclient
-import requests
+import sys
 import os
+import re
+import requests
+import json
+import apiclient
+
+import numpy as np
+import pandas as pd
+import math
+import cvxopt as opt
+import cvxopt.solvers as optsolvers
+import datetime
+import dateutil
 
 ##
 # The Robinhood interface, built from the ground up sadly!
@@ -33,7 +44,7 @@ class Client(apiclient.TokenClient):
     pass
 
   def logout(self):
-    self.post('/api-token-logout/')
+    self.post('api-token-logout')
     self.username, self.token = None, None
     pass
 
@@ -83,15 +94,27 @@ class Client(apiclient.TokenClient):
     return self.get('/instruments/' + symbol_or_id).json()
 
   ##
+  # Get accounts for this user
+  def accounts(self):
+    accounts = self.get('accounts', response_class = apiclient.PaginatedResponse)
+
+    # Save the first account ID
+    self.account_id = accounts.results()[0]['account_number']
+
+    # Return the account record
+    return accounts
+
+  ##
   # Get current portfolio
   # @return A
   def portfolio(self):
     # TODO
     portfolio = self.get(['accounts', self.account_id, 'portfolio'])
-    print(portfolio)
+    return portfolio
 
-    p = pd.DataFrame()
-    return p
+  def positions(self):
+    positions = self.get(['accounts', self.account_id, 'positions'])
+    return positions
 
   ##
   # Get the current total portfolio size (all assets)
