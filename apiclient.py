@@ -3,6 +3,7 @@
 
 import os
 import requests
+import logging
 
 class BasicResponse(object):
   def __init__(self, response):
@@ -10,6 +11,12 @@ class BasicResponse(object):
     self.response = response.json()
 
   def json(self):
+    return self.response
+
+  def __getitem__(self, key):
+    return self.response[key]
+
+  def __str__(self):
     return self.response
 
 

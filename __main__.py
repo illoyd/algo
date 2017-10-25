@@ -10,8 +10,12 @@ import json
 import requests
 import dateutil
 import re
+import logging
 
 import robinhood
+
+# Activate logging!
+logging.basicConfig(level=logging.DEBUG)
 
 ##
 # Main entry point for this cloud function

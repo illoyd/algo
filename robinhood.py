@@ -12,6 +12,7 @@ import cvxopt as opt
 import cvxopt.solvers as optsolvers
 import datetime
 import dateutil
+import logging
 
 ##
 # The Robinhood interface, built from the ground up sadly!
@@ -24,20 +25,29 @@ class Client(apiclient.TokenClient):
     password = self.coalesce(password, os.environ.get('ROBINHOOD_PASSWORD'))
     account_id = self.coalesce(account_id, os.environ.get('ROBINHOOD_ACCOUNTID'))
 
+    # Set up the instrument cache
+    self.instrument_cache = {}
+
     # Perform login
-    if username and password:
+    if (not self.token) and username and password:
       self.login(username, password)
+
+    # Add account id
+    self.account_id = account_id
 
   ##
   # Perform login to Robinhood, and save the returned token
   # @return Nothing
   def login(self, username, password):
+    logging.info('Logging in as %s', username)
+
     # Save the username for reference
     self.username = username
 
     # Sign in
     data = { 'username': self.username, 'password': password }
-    response = self.post('/api-token-auth/', data = data)
+    response = self.post('api-token-auth', data = data)
+    print(response.response)
 
     # Process response and save
     self.token = response.json()['token']
@@ -59,7 +69,7 @@ class Client(apiclient.TokenClient):
 
     # Query API
     symbol_list = ','.join(symbols_or_ids)
-    response = self.get('/quotes/historicals/', { 'symbols': symbol_list, 'interval': 'day' }).json()
+    response = self.get('quotes/historicals', { 'symbols': symbol_list, 'interval': 'day' }).json()
 
     # Process response
     quotes = []
@@ -77,7 +87,7 @@ class Client(apiclient.TokenClient):
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
     # Get watchlist
-    response = self.get('/watchlists/'+name+'/').json()
+    response = self.get(['watchlists', name]).json()
 
     # For every watchlist entry, look up the instrument to get the symbol
     w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
@@ -91,7 +101,13 @@ class Client(apiclient.TokenClient):
     if match:
       symbol_or_id = match[1]
 
-    return self.get('/instruments/' + symbol_or_id).json()
+    # TODO: Turn this into a real cache, but for now...
+    if not self.instrument_cache.get(symbol_or_id):
+      instrument = self.get(['instruments', symbol_or_id])
+      self.instrument_cache[instrument['symbol']] = instrument
+      self.instrument_cache[instrument['id']] = instrument
+
+    return self.instrument_cache[symbol_or_id]
 
   ##
   # Get accounts for this user
@@ -105,24 +121,56 @@ class Client(apiclient.TokenClient):
     return accounts
 
   ##
-  # Get current portfolio
-  # @return A
+  # Get current account portfolio
+  # @return A response object of the portfolio
   def portfolio(self):
     # TODO
     portfolio = self.get(['accounts', self.account_id, 'portfolio'])
     return portfolio
 
+  class Position(object):
+    def __init__(self, args = {}):
+      self.original = args
+      self.id = args['id']
+      self.quantity = float(args['quantity'])
+
+  ##
+  # Get all positions; note that this includes closed positions!
+  # @return A list of positions as hashes
   def positions(self):
-    positions = self.get(['accounts', self.account_id, 'positions'])
+    positions = self.get(['accounts', self.account_id, 'positions'], response_class=apiclient.PaginatedResponse)
+    return positions.results()
+
+  ##
+  # Get all open positions; removes any closed positions from list
+  # @return A list of open positions
+  def open_positions(self):
+    positions = self.positions()
+    positions = [ position for position in positions if float(position['quantity']) > 0.0 ]
+    for position in positions:
+      position['symbol'] = self.instrument(position['instrument'])['symbol']
     return positions
+
+  ##
+  # Get the current total equity, which is cash + held assets
+  # @return Decimal representing total equity
+  # TODO Convert to decimal!
+  def equity(self):
+    return float(self.portfolio()['equity'])
+
+  ##
+  # Get the current total margin, which is the Robinhood Gold limit
+  # @return Decimal representing total margin
+  # TODO Convert to decimal!
+  # TODO Get from the account object!
+  def margin(self):
+    return 6000.0
 
   ##
   # Get the current total portfolio size (all assets)
   # @return The dollar value of the asset
-  def current_capital(self):
-    # TODO
-    capital = 0.0
-    return capital
+  def capital(self):
+    return self.equity() + self.margin()
 
   ##
   # Issue a buy order
