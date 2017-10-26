@@ -11,7 +11,6 @@ import requests
 import dateutil
 import re
 import logging
-from decimal import Decimal
 
 import robinhood
 import algo
@@ -38,7 +37,7 @@ def main(args = {}):
   target_portfolio_weights = calculate_target_portfolio_weights(prices)
 
   # Convert the target weights into target positions
-  capital = (client.equity() * Decimal(0.97)) + client.margin()
+  capital = (client.equity() * 0.97) + client.margin()
   mid_quotes = client.quotes(*watchlist)
   target_portfolio = calculate_target_portfolio(target_portfolio_weights, mid_quotes, capital)
 

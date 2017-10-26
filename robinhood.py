@@ -13,7 +13,6 @@ import cvxopt.solvers as optsolvers
 import datetime
 import dateutil
 import logging
-from decimal import Decimal
 
 ##
 # The Robinhood interface, built from the ground up sadly!
@@ -76,7 +75,7 @@ class Client(apiclient.TokenClient):
     quotes = []
     for entry in response.get('results', []):
       symbol = entry['symbol']
-      prices = list(map(lambda e: Decimal(e['close_price']), entry['historicals']))
+      prices = list(map(lambda e: float(e['close_price']), entry['historicals']))
       dates = list(map(lambda e: dateutil.parser.parse(e['begins_at']).date(), entry['historicals']))
       s = pd.Series(prices, index=dates, name=symbol)
       quotes.append(s)
@@ -137,7 +136,7 @@ class Client(apiclient.TokenClient):
     def __init__(self, args = {}):
       self.original = args
       self.id = args['id']
-      self.quantity = Decimal(args['quantity'])
+      self.quantity = float(args['quantity'])
 
   ##
   # Get all positions; note that this includes closed positions!
@@ -151,25 +150,25 @@ class Client(apiclient.TokenClient):
   # @return A list of open positions
   def open_positions(self):
     positions = self.positions()
-    positions = [ position for position in positions if Decimal(position['quantity']) > 0.0 ]
+    positions = [ position for position in positions if float(position['quantity']) > 0.0 ]
     for position in positions:
       position['symbol'] = self.instrument(position['instrument'])['symbol']
-    return pd.Series({ p['symbol']: Decimal(p['quantity']) for p in positions }).astype(float)
+    return pd.Series({ p['symbol']: float(p['quantity']) for p in positions }).astype(float)
 
   ##
   # Get the current total equity, which is cash + held assets
-  # @return Decimal representing total equity
+  # @return Float representing total equity
   # TODO Convert to decimal!
   def equity(self):
-    return Decimal(self.portfolio()['equity'])
+    return float(self.portfolio()['equity'])
 
   ##
   # Get the current total margin, which is the Robinhood Gold limit
-  # @return Decimal representing total margin
+  # @return Float representing total margin
   # TODO Convert to decimal!
   # TODO Get from the account object!
   def margin(self):
-    return Decimal(6000.0)
+    return float(6000.0)
 
   ##
   # Get the current total portfolio size (all assets)
