@@ -18,6 +18,8 @@ import algo
 # Activate logging!
 logging.basicConfig(level=logging.INFO)
 
+perform_orders = True
+
 ##
 # Main entry point for this cloud function
 # @args A single JSON (or dictionary) object
@@ -97,14 +99,16 @@ def main(args = {}):
   logging.info('STEP 9: SELL')
   for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
     logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
-    # client.sell(symbol, abs(delta))
+    if perform_orders:
+      client.sell(symbol, abs(delta))
 
   # Perform buys
   logging.info('STEP 10: BUY')
   for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
-    limit = mid_quotes[symbol] * 1.02
+    limit = round( mid_quotes[symbol] * 1.02, 2 )
     logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
-    # client.buy(symbol, abs(delta), limit)
+    if perform_orders:
+      client.buy(symbol, abs(delta), limit)
 
   # Boring stuff!
   return {
