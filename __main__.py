@@ -27,14 +27,14 @@ def main(args = {}):
   # Sign into Robinhood
   client = robinhood.Client()
 
-  # Get watchlist
+  # Get universe of symbols
   logging.info('STEP 1: WATCHLIST')
-  watchlist = client.watchlist()
-  logging.info('Found %s', ', '.join(watchlist))
+  universe = client.watchlist()
+  logging.info('Found %s', ', '.join(universe))
 
-  # Get historical data for watchlist (only last X days)
+  # Get historical data for universe (only last X days)
   logging.info('STEP 2: PRICES')
-  prices = client.historical_prices(*watchlist).iloc[-20:]
+  prices = client.historical_prices(*universe).iloc[-20:]
   logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
   logging.debug(prices)
 
@@ -55,7 +55,7 @@ def main(args = {}):
 
   # Get mid quotes
   logging.info('STEP 5: QUOTES')
-  mid_quotes = client.quotes(*watchlist)
+  mid_quotes = client.quotes(*universe)
   logging.info('Found quotes: %s', ', '.join([ '{}@{:0.4f}'.format(s, q) for s, q in mid_quotes.iteritems() ]))
   logging.debug(mid_quotes)
 
