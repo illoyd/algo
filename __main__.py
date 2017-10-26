@@ -85,7 +85,7 @@ def main(args = {}):
   logging.info('STEP 7: CURRENT HOLDINGS')
   current_portfolio = client.open_positions()
   logging.info('Current holdings: %s', portfolio_stringify(current_portfolio))
-  logging.info(current_portfolio)
+  logging.debug(current_portfolio)
 
   # Calculate the necessary movements
   logging.info('STEP 8: DETERMINE MOVEMENTS')
