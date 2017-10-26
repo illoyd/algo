@@ -84,6 +84,9 @@ def main(args = {}):
   logging.info('Target holdings: %s', portfolio_stringify(target_portfolio))
   logging.debug(target_portfolio)
 
+  # Calculate total portfolio value...
+  logging.info('TOTAL PORTFOLIO VALUE: %s', (target_portfolio * mid_quotes).sum())
+
   # Get the current portfolio
   logging.info('STEP 7: CURRENT HOLDINGS')
   current_portfolio = client.open_positions()
