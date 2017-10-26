@@ -11,6 +11,7 @@ import requests
 import dateutil
 import re
 import logging
+import time
 
 import robinhood
 import algo
@@ -101,6 +102,10 @@ def main(args = {}):
     logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
     if perform_orders:
       client.sell(symbol, abs(delta))
+
+  # Sleep a bit...
+  logging.info('TAKE A BREATH...')
+  time.sleep(5)
 
   # Perform buys
   logging.info('STEP 10: BUY')
