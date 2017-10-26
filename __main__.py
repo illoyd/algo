@@ -46,6 +46,22 @@ def main(args = {}):
 
   # Short circuit if no target portfolio is found!
   if len(target_portfolio_weights) == 0:
+    universe = [ 'TLT', 'HYG', 'SPY' ]
+
+    # Get historical data for universe (only last X days)
+    logging.info('STEP 2a: RETRY PRICES')
+    prices = client.historical_prices(*universe).iloc[-20:-1]
+    logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
+    logging.debug(prices)
+
+    # Calculate the target portfolio weights based on Sharpe
+    logging.info('STEP 3a: RETRY TARGET WEIGHTS')
+    target_portfolio_weights = calculate_target_portfolio_weights(prices)
+    logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
+    logging.debug(target_portfolio_weights.round(2))
+
+  # Short circuit if no target portfolio is found!
+  if len(target_portfolio_weights) == 0:
     return { 'error': 'No optimal portfolio found.' }
 
   # Determine available captial to play with
@@ -62,19 +78,19 @@ def main(args = {}):
   # Convert the target weights into target positions
   logging.info('STEP 6: TARGET HOLDINGS')
   target_portfolio = calculate_target_portfolio(target_portfolio_weights, mid_quotes, capital)
-  logging.info('Target holdings: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in target_portfolio.iteritems() ]))
+  logging.info('Target holdings: %s', portfolio_stringify(target_portfolio))
   logging.debug(target_portfolio)
 
   # Get the current portfolio
   logging.info('STEP 7: CURRENT HOLDINGS')
   current_portfolio = client.open_positions()
-  logging.info('Current holdings: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in current_portfolio.iteritems() ]))
+  logging.info('Current holdings: %s', portfolio_stringify(current_portfolio))
   logging.info(current_portfolio)
 
   # Calculate the necessary movements
   logging.info('STEP 8: DETERMINE MOVEMENTS')
   portfolio_delta = target_portfolio.subtract(current_portfolio, fill_value = 0.0).sort_values()
-  logging.info('Delta: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in portfolio_delta.iteritems() ]))
+  logging.info('Delta: %s', portfolio_stringify(portfolio_delta))
   logging.debug(portfolio_delta)
 
   # Perform sells
@@ -92,14 +108,14 @@ def main(args = {}):
 
   # Boring stuff!
   return {
-    'current_portfolio': current_portfolio,
-    'target_portfolio': target_portfolio,
-    'delta': portfolio_delta
+    'current_portfolio': dict(current_portfolio),
+    'target_portfolio': dict(target_portfolio),
+    'delta': dict(portfolio_delta)
    }
 
 
-def portfolio_stringify(weights):
-  return ", ".join([ "{}: {}".format(symbol, quantity) for symbol, quantity in weights.iteritems() ])
+def portfolio_stringify(portfolio):
+  return ', '.join([ '{}: {:0.0f}'.format(symbol, quantity) for symbol, quantity in portfolio.iteritems() ])
 
 
 ##
@@ -154,7 +170,7 @@ def calculate_target_portfolio(weights, mid_quotes, capital):
   capital_weights = weights * float(capital)
 
   # Divide the capital weight of each asset by its mid-quote
-  shares = capital_weights / mid_quotes
+  shares = capital_weights.divide(mid_quotes, fill_value = 0.0)
 
   # Floor the share (no fractional shares here)
   shares = np.floor(shares)
