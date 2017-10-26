@@ -16,7 +16,7 @@ import robinhood
 import algo
 
 # Activate logging!
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 ##
 # Main entry point for this cloud function
@@ -28,32 +28,78 @@ def main(args = {}):
   client = robinhood.Client()
 
   # Get watchlist
+  logging.info('STEP 1: WATCHLIST')
   watchlist = client.watchlist()
+  logging.info('Found %s', ', '.join(watchlist))
 
-  # Get historical data for watchlist (only last 15)
-  prices = client.historical_prices(*watchlist).iloc[-15:]
+  # Get historical data for watchlist (only last X days)
+  logging.info('STEP 2: PRICES')
+  prices = client.historical_prices(*watchlist).iloc[-20:]
+  logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
+  logging.debug(prices)
 
   # Calculate the target portfolio weights based on Sharpe
+  logging.info('STEP 3: TARGET WEIGHTS')
   target_portfolio_weights = calculate_target_portfolio_weights(prices)
+  logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
+  logging.debug(target_portfolio_weights.round(2))
+
+  # Short circuit if no target portfolio is found!
+  if len(target_portfolio_weights) == 0:
+    return { 'error': 'No optimal portfolio found.' }
+
+  # Determine available captial to play with
+  logging.info('STEP 4: CAPITAL')
+  capital = (client.equity() * 0.97) + client.margin()
+  logging.info('Capital: %s', capital)
+
+  # Get mid quotes
+  logging.info('STEP 5: QUOTES')
+  mid_quotes = client.quotes(*watchlist)
+  logging.info('Found quotes: %s', ', '.join([ '{}@{:0.4f}'.format(s, q) for s, q in mid_quotes.iteritems() ]))
+  logging.debug(mid_quotes)
 
   # Convert the target weights into target positions
-  capital = (client.equity() * 0.97) + client.margin()
-  mid_quotes = client.quotes(*watchlist)
+  logging.info('STEP 6: TARGET HOLDINGS')
   target_portfolio = calculate_target_portfolio(target_portfolio_weights, mid_quotes, capital)
+  logging.info('Target holdings: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in target_portfolio.iteritems() ]))
+  logging.debug(target_portfolio)
 
   # Get the current portfolio
+  logging.info('STEP 7: CURRENT HOLDINGS')
   current_portfolio = client.open_positions()
+  logging.info('Current holdings: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in current_portfolio.iteritems() ]))
+  logging.info(current_portfolio)
 
   # Calculate the necessary movements
+  logging.info('STEP 8: DETERMINE MOVEMENTS')
   portfolio_delta = target_portfolio.subtract(current_portfolio, fill_value = 0.0).sort_values()
-  # TODO: Sort
+  logging.info('Delta: %s', ', '.join([ '{}: {:0.0f}'.format(s, q) for s, q in portfolio_delta.iteritems() ]))
+  logging.debug(portfolio_delta)
 
   # Perform sells
+  logging.info('STEP 9: SELL')
+  for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
+    logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
+    # client.sell(symbol, abs(delta))
 
   # Perform buys
+  logging.info('STEP 10: BUY')
+  for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
+    limit = mid_quotes[symbol] * 1.02
+    logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
+    # client.buy(symbol, abs(delta), limit)
 
   # Boring stuff!
-  return portfolio_delta
+  return {
+    'current_portfolio': current_portfolio,
+    'target_portfolio': target_portfolio,
+    'delta': portfolio_delta
+   }
+
+
+def portfolio_stringify(weights):
+  return ", ".join([ "{}: {}".format(symbol, quantity) for symbol, quantity in weights.iteritems() ])
 
 
 ##
@@ -61,14 +107,23 @@ def main(args = {}):
 def calculate_target_portfolio_weights(prices):
   prices = prices.astype(float)
   best_weights, best_sharpe, best_days = None, 0.0, 0
-  while len(prices.index) >= 2:
+
+  collected_weights = []
+
+  while len(prices.index) >= 3:
     weights, sharpe = calculate_target_portfolio_weights_inner(prices)
+    weights['(SHARPE)'] = sharpe
+    weights.name = len(prices.index)
+    collected_weights.append(weights)
+
     if sharpe >= best_sharpe:
-      best_weights, best_sharpe, best_days = weights, sharpe, len(prices.index)
+      best_weights, best_sharpe, best_days = weights, sharpe, weights.name
     prices = prices[1:]
 
-  logging.info('Best days %i', best_days)
-  return best_weights
+  logging.debug(pd.concat(collected_weights, axis=1).round(2))
+  logging.debug('Best days %i', best_days)
+
+  return best_weights.drop('(SHARPE)')
 
 def calculate_target_portfolio_weights_inner(prices):
   # Perform general calculations
@@ -79,8 +134,6 @@ def calculate_target_portfolio_weights_inner(prices):
   # Run the tangency optimiser; on failure, return an empty series and a 0 sharpe.
   try:
       w = tangency_portfolio(covariance, expected_returns)
-      for asset, weight in w.iteritems():
-          w[asset] = round(weight, 2)
       return (w, annualized_sharpe(returns, covariance, w))
 
   except ValueError as e:

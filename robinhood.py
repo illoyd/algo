@@ -186,15 +186,35 @@ class Client(apiclient.TokenClient):
   ##
   # Issue a buy order
   # @return Whatever!
-  def buy(self, symbol, units):
-    # TODO
-    r = None
-    return r
+  def buy(self, symbol, quantity, price):
+    data = {
+      'account': self.account_uri(),
+      'instrument': self.instrument(symbol)['url'],
+      'symbol': symbol,
+      'type': 'limit',
+      'price': price,
+      'time_in_force': 'gfd',
+      'trigger': 'immediate',
+      'quantity': abs(quantity),
+      'side': 'buy'
+    }
+    return self.post('orders', data=data)
 
   ##
   # Issue a sell order
   # @return Whatever!
-  def sell(self, symbol, units):
-    # TODO
-    r = None
-    return r
+  def sell(self, symbol, quantity):
+    data = {
+      'account': self.account_uri(),
+      'instrument': self.instrument(symbol)['url'],
+      'symbol': symbol,
+      'type': 'market',
+      'time_in_force': 'gfd',
+      'trigger': 'immediate',
+      'quantity': abs(quantity),
+      'side': 'sell'
+    }
+    return self.post('orders', data=data)
+
+  def account_uri(self):
+    return self.normalize_uri(['accounts', self.account_id])
