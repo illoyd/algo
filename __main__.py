@@ -81,7 +81,7 @@ def main(args = {}):
 
   # Determine available captial to play with
   logging.info('STEP 4: CAPITAL')
-  capital = (client.equity() * 0.99) + client.margin()
+  capital = (client.equity() * 0.98) + client.margin()
   logging.info('Capital: %s', capital)
 
   # Get mid quotes
@@ -97,7 +97,9 @@ def main(args = {}):
   logging.debug(target_portfolio)
 
   # Calculate total portfolio value...
-  logging.info('TOTAL PORTFOLIO VALUE: %s', (target_portfolio * mid_quotes).sum())
+  capital_used = (target_portfolio * mid_quotes).sum()
+  capital_utilisation = capital_used / capital
+  logging.info('TOTAL PORTFOLIO VALUE: %s (%s)', capital_used, capital_utilisation)
 
   # Get the current portfolio
   logging.info('STEP 7: CURRENT HOLDINGS')
@@ -196,8 +198,8 @@ def calculate_target_portfolio(weights, mid_quotes, capital):
   # Divide the capital weight of each asset by its mid-quote
   shares = capital_weights.divide(mid_quotes, fill_value = 0.0)
 
-  # Floor the share (no fractional shares here)
-  shares = np.floor(shares)
+  # Round the share (no fractional shares here)
+  shares = np.around(shares, 0)
 
   return shares
 
