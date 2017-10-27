@@ -1,5 +1,6 @@
 # Standard library imports
 import sys
+import os
 import numpy as np
 import pandas as pd
 import math
@@ -19,16 +20,27 @@ import algo
 # Activate logging!
 logging.basicConfig(level=logging.INFO)
 
-perform_orders = True
-
 ##
 # Main entry point for this cloud function
 # @args A single JSON (or dictionary) object
 # @return A JSON (or dictionary) object
 def main(args = {}):
 
+  # Extract values from arguments
+  username = args.get('username', os.environ.get('ROBINHOOD_USERNAME'))
+  password = args.get('password', os.environ.get('ROBINHOOD_PASSWORD'))
+  account_id = args.get('account', os.environ.get('ROBINHOOD_ACCOUNTID'))
+  execute = ( args.get('execute', False) == 'true' )
+
+  # Preamble!
+  logging.info('Beginning algo with options:')
+  logging.info('  username:  %s', username)
+  logging.info('  password:  %s', ('SET' if password else 'NONE'))
+  logging.info('  account:   %s', account_id)
+  logging.info('  execute:   %s', execute)
+
   # Sign into Robinhood
-  client = robinhood.Client()
+  client = robinhood.Client(username = username, password = password, account_id = account_id)
 
   # Get universe of symbols
   logging.info('STEP 1: WATCHLIST')
@@ -103,7 +115,7 @@ def main(args = {}):
   logging.info('STEP 9: SELL')
   for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
     logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
-    if perform_orders:
+    if execute:
       client.sell(symbol, abs(delta))
 
   # Sleep a bit...
@@ -115,7 +127,7 @@ def main(args = {}):
   for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
     limit = round( mid_quotes[symbol] * 1.02, 2 )
     logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
-    if perform_orders:
+    if execute:
       client.buy(symbol, abs(delta), limit)
 
   # Boring stuff!
