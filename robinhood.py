@@ -14,16 +14,18 @@ import datetime
 import dateutil
 import logging
 
+import helper
+
 ##
 # The Robinhood interface, built from the ground up sadly!
 class Client(apiclient.TokenClient):
   def __init__(self, username = None, password = None, account_id = None, token = None, base_endpoint = 'https://api.robinhood.com'):
-    super().__init__(token = self.coalesce(token, os.environ.get('ROBINHOOD_TOKEN')), base_endpoint = base_endpoint)
+    super().__init__(token = helper.coalesce(token, os.environ.get('ROBINHOOD_TOKEN')), base_endpoint = base_endpoint)
 
     # Coalesce to environment defaults
-    username = self.coalesce(username, os.environ.get('ROBINHOOD_USERNAME'))
-    password = self.coalesce(password, os.environ.get('ROBINHOOD_PASSWORD'))
-    account_id = self.coalesce(account_id, os.environ.get('ROBINHOOD_ACCOUNTID'))
+    username = helper.coalesce(username, os.environ.get('ROBINHOOD_USERNAME'))
+    password = helper.coalesce(password, os.environ.get('ROBINHOOD_PASSWORD'))
+    account_id = helper.coalesce(account_id, os.environ.get('ROBINHOOD_ACCOUNTID'))
 
     # Set up the instrument cache
     self.instrument_cache = {}

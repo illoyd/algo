@@ -63,11 +63,6 @@ class BasicClient(object):
     response = requests.post(uri, params=params, data=data, headers=headers)
     return response_class(response)
 
-  ##
-  # Take the first non-None value from a given list
-  def coalesce(self, *args):
-    return next((item for item in args if item is not None), None)
-
 class TokenClient(BasicClient):
   def __init__(self, token = None, base_endpoint = None):
     super().__init__(base_endpoint = base_endpoint)
