@@ -3,7 +3,7 @@ import os
 import re
 import requests
 import json
-import apiclient
+import simpleapi
 
 import numpy as np
 import pandas as pd
@@ -18,20 +18,26 @@ import helper
 
 ##
 # The Robinhood interface, built from the ground up sadly!
-class Client(apiclient.TokenClient):
-  def __init__(self, username = None, password = None, account_id = None, token = None, base_endpoint = 'https://api.robinhood.com'):
-    super().__init__(token = helper.coalesce(token, os.environ.get('ROBINHOOD_TOKEN')), base_endpoint = base_endpoint)
+class Client(object):
+  def __init__(self, username = None, password = None, account_id = None, token = None):
 
     # Coalesce to environment defaults
     username = helper.coalesce(username, os.environ.get('ROBINHOOD_USERNAME'))
     password = helper.coalesce(password, os.environ.get('ROBINHOOD_PASSWORD'))
     account_id = helper.coalesce(account_id, os.environ.get('ROBINHOOD_ACCOUNTID'))
+    token = helper.coalesce(token, os.environ.get('ROBINHOOD_TOKEN'))
 
     # Set up the instrument cache
     self.instrument_cache = {}
 
+    # Activate the client
+    self.api = simpleapi.TokenAPI(
+      simpleapi.API('https://api.robinhood.com'),
+      token = token
+    )
+
     # Perform login
-    if (not self.token) and username and password:
+    if (not self.api.token) and username and password:
       self.login(username, password)
 
     # Add account id
@@ -48,15 +54,15 @@ class Client(apiclient.TokenClient):
 
     # Sign in
     data = { 'username': self.username, 'password': password }
-    response = self.post('api-token-auth', data = data)
-    print(response.response)
+    response = self.api.post('/api-token-auth/', data = data)
+    logging.debug(response.json())
 
     # Process response and save
-    self.token = response.json()['token']
+    self.api.set_token(response.json()['token'])
     pass
 
   def logout(self):
-    self.post('api-token-logout')
+    self.api.post('/api-token-logout/')
     self.username, self.token = None, None
     pass
 
@@ -71,7 +77,7 @@ class Client(apiclient.TokenClient):
 
     # Query API
     symbol_list = ','.join([*symbols_or_ids])
-    response = self.get('quotes/historicals', { 'symbols': symbol_list, 'interval': 'day' }).json()
+    response = self.api.get('/quotes/historicals/', params={ 'symbols': symbol_list, 'interval': 'day' }).json()
 
     # Process response
     quotes = []
@@ -89,7 +95,7 @@ class Client(apiclient.TokenClient):
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
     # Get watchlist
-    response = self.get(['watchlists', name]).json()
+    response = self.api.get('/watchlists/' + name + '/').json()
 
     # For every watchlist entry, look up the instrument to get the symbol
     w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
@@ -97,7 +103,7 @@ class Client(apiclient.TokenClient):
 
   def add_to_watchlist(self, name, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
-    return self.post(['watchlists', name, 'bulk_add'], data={ 'symbols': symbol_list })
+    return self.api.post('/watchlists/' + name + '/bulk_add/', data={ 'symbols': symbol_list }).json()
 
   ##
   # Get the instrument details
@@ -109,7 +115,8 @@ class Client(apiclient.TokenClient):
 
     # TODO: Turn this into a real cache, but for now...
     if not self.instrument_cache.get(symbol_or_id):
-      instrument = self.get(['instruments', symbol_or_id])
+      logging.info('Finding instrument %s', symbol_or_id)
+      instrument = self.api.get('/instruments/' + symbol_or_id + '/').json()
       self.instrument_cache[instrument['symbol']] = instrument
       self.instrument_cache[instrument['id']] = instrument
 
@@ -118,34 +125,26 @@ class Client(apiclient.TokenClient):
   ##
   # Get accounts for this user
   def accounts(self):
-    accounts = self.get('accounts', response_class = apiclient.PaginatedResponse)
+    accounts = self.api.get('accounts')
 
     # Save the first account ID
-    self.account_id = accounts.results()[0]['account_number']
+    self.account_id = accounts.json()[0]['account_number']
 
     # Return the account record
-    return accounts
+    return accounts.json()
 
   ##
   # Get current account portfolio
   # @return A response object of the portfolio
   def portfolio(self):
-    # TODO
-    portfolio = self.get(['accounts', self.account_id, 'portfolio'])
-    return portfolio
-
-  class Position(object):
-    def __init__(self, args = {}):
-      self.original = args
-      self.id = args['id']
-      self.quantity = float(args['quantity'])
+    return self.api.get('/accounts/' + self.account_id + '/portfolio/').json()
 
   ##
   # Get all positions; note that this includes closed positions!
   # @return A list of positions as hashes
   def positions(self):
-    positions = self.get(['accounts', self.account_id, 'positions'], response_class=apiclient.PaginatedResponse)
-    return positions.results()
+    positions = self.api.get('/accounts/' + self.account_id + '/positions/')
+    return positions.json()['results']
 
   ##
   # Get all open positions; removes any closed positions from list
@@ -155,7 +154,7 @@ class Client(apiclient.TokenClient):
     positions = [ position for position in positions if float(position['quantity']) > 0.0 ]
     for position in positions:
       position['symbol'] = self.instrument(position['instrument'])['symbol']
-    return pd.Series({ p['symbol']: float(p['quantity']) for p in positions }).astype(float)
+    return pd.Series({ p['symbol']: float(p['quantity']) for p in positions })
 
   ##
   # Get the current total equity, which is cash + held assets
@@ -172,15 +171,9 @@ class Client(apiclient.TokenClient):
   def margin(self):
     return float(6000.0)
 
-  ##
-  # Get the current total portfolio size (all assets)
-  # @return The dollar value of the asset
-  def capital(self):
-    return self.equity() + self.margin()
-
   def quotes(self, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
-    response = self.get('quotes', { 'symbols': symbol_list }).json()
+    response = self.api.get('/quotes/', params = { 'symbols': symbol_list }).json()
     quotes = [ (float(quote['bid_price']) + float(quote['ask_price'])) / 2.0 for quote in response['results'] ]
     index = [ quote['symbol'] for quote in response['results'] ]
     return pd.Series(quotes, index=index)
@@ -200,7 +193,7 @@ class Client(apiclient.TokenClient):
       'quantity': abs(quantity),
       'side': 'buy'
     }
-    return self.post('orders', data=data)
+    return self.api.post('/orders/', data=data)
 
   ##
   # Issue a sell order
@@ -216,7 +209,8 @@ class Client(apiclient.TokenClient):
       'quantity': abs(quantity),
       'side': 'sell'
     }
-    return self.post('orders', data=data)
+    return self.api.post('/orders/', data=data)
 
   def account_uri(self):
-    return self.normalize_uri(['accounts', self.account_id])
+    # TODO FIx this!
+    return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
