@@ -20,6 +20,7 @@ import algo
 # Activate logging!
 logging.basicConfig(level=logging.INFO)
 
+
 ##
 # Main entry point for this cloud function
 # @args A single JSON (or dictionary) object
@@ -131,6 +132,10 @@ def main(args = {}):
     logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
     if execute:
       client.buy(symbol, abs(delta), limit)
+
+  # Log out
+  logging.info('STEP 11: SIGN OUT')
+  client.logout()
 
   # Boring stuff!
   return {
