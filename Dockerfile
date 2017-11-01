@@ -7,7 +7,8 @@ RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/reposit
 RUN apk add --no-cache \
         g++ \
         lapack-dev \
-        gfortran
+        gfortran \
+        suitesparse
 
 # add python packages
 RUN pip install \
