@@ -18,8 +18,10 @@ undeploy:
 	bx wsk action delete $(action_name)
 
 build-docker:
-	docker build -t $(python_algo_runtime) .
+	docker build -t $(docker_image) . \
+	&& docker tag $(docker_image) $(docker_username)/$(docker_image) \
+	&& docker push $(docker_username)/$(docker_image)
 
 deploy:
-	bx wsk action update $(action_name) --docker $(docker_username)/$(python_algo_runtime) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID}
+	bx wsk action update $(action_name) --docker $(docker_username)/$(docker_image) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID}
 
