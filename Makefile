@@ -9,7 +9,7 @@ clean:
 	rm build/$(action_name).zip
 
 zip: clean
-	zip -r build/$(action_name).zip __main__.py simpleapi.py helper.py robinhood.py
+	zip -r build/$(action_name).zip __main__.py simpleapi.py helper.py robinhood.py algo.py
 
 invoke:
 	bx wsk action invoke $(action_name) --blocking --result

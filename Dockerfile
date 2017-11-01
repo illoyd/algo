@@ -17,4 +17,4 @@ RUN pip install \
 
 # Add CVXOpt
 RUN pip install \
-    cvxopt
+    cvxopt==1.1.8
