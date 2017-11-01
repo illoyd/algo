@@ -10,8 +10,11 @@ RUN apk add --no-cache \
         gfortran \
         suitesparse
 
-# add python packages
+# Add base python packages
 RUN pip install \
-    cvxopt \
     numpy \
     pandas
+
+# Add CVXOpt
+RUN pip install \
+    cvxopt
