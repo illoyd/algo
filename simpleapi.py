@@ -12,7 +12,13 @@ class API(object):
 
     self.session.headers.update({ 'Accept': 'application/json' })
 
+  ##
+  # Return a completed URI
   def relative_uri(self, uri):
+    if isinstance(uri, tuple):
+      base, inputs = uri[0], uri[1:]
+      uri = base.format(*inputs)
+      logging.warn(uri)
     return requests.compat.urljoin(self.endpoint, uri)
 
   def get(self, uri, *args, **kwargs):
