@@ -3,7 +3,9 @@ import os
 import re
 import requests
 import json
+
 import simpleapi
+import resourceful
 
 import numpy as np
 import pandas as pd
@@ -213,3 +215,18 @@ class Client(object):
   def account_uri(self):
     # TODO FIx this!
     return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
+
+  def markets(self):
+    return Market(self.api)
+
+  def are_markets_open(self):
+    return self.markets().hours('XNYS').json()['is_open']
+
+class Market(resourceful.Resource):
+  def __init__(self, api):
+    super().__init__(api, '/markets/')
+
+  def hours(self, id):
+    year, month, day = datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day
+    uri = ('{}{}/hours/{}-{}-{}/', self.base_uri, id, year, month, day)
+    return self.api.get(uri)
