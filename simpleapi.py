@@ -37,8 +37,18 @@ class APIProxy(object):
 # Include Token detection for APIs
 class TokenAPI(APIProxy):
   def __init__(self, api, token = None):
-    self.api = api
+    super().__init__(api)
     self.token = token
+
+  def get(self, *args, **kwargs):
+    response = self.api.get(*args, **kwargs)
+    self.assign_token_if_exists(response)
+    return response
+
+  def post(self, *args, **kwargs):
+    response = self.api.post(*args, **kwargs)
+    self.assign_token_if_exists(response)
+    return response
 
   @property
   def token(self):
@@ -51,3 +61,10 @@ class TokenAPI(APIProxy):
       self.api.session.headers.update({'Authorization': 'Token ' + val})
     else:
       self.api.session.headers.pop('Authorization', None)
+
+  def assign_token_if_exists(self, response):
+    token = response.json().get('token', None)
+    if token:
+      logging.debug('Assigning token %s', token)
+      self.token = token
+    pass

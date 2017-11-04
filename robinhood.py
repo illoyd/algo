@@ -58,7 +58,7 @@ class Client(object):
     logging.debug(response.json())
 
     # Process response and save
-    self.api.token = response.json()['token']
+    #self.api.token = response.json()['token']
     pass
 
   def logout(self):
