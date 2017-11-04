@@ -31,17 +31,30 @@ def main(args = {}):
   username = args.get('username', os.environ.get('ROBINHOOD_USERNAME'))
   password = args.get('password', os.environ.get('ROBINHOOD_PASSWORD'))
   account_id = args.get('account', os.environ.get('ROBINHOOD_ACCOUNTID'))
-  execute = ( args.get('execute', False) == 'true' )
+  market_check = ( args.get('market_check', 'true') == 'true' )
+  execute = ( args.get('execute', 'false') == 'true' )
 
   # Preamble!
   logging.info('Beginning algo with options:')
   logging.info('  username:  %s', username)
   logging.info('  password:  %s', ('SET' if password else 'NONE'))
   logging.info('  account:   %s', account_id)
+  logging.info('  market_check: %s', market_check)
   logging.info('  execute:   %s', execute)
 
   # Sign into Robinhood
   client = robinhood.Client(username = username, password = password, account_id = account_id)
+
+  # Check if markets are open
+  if market_check:
+    logging.info('PRE: MARKETS OPEN?')
+    if not client.are_markets_open():
+      logging.warn('Markets are closed! Cancelling')
+      client.logout()
+      return {
+        "status": "not run",
+        "reason": "markets closed"
+      }
 
   # Get universe of symbols
   logging.info('STEP 1: WATCHLIST')
