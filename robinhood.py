@@ -55,7 +55,6 @@ class Client(object):
     # Sign in
     data = { 'username': self.username, 'password': password }
     response = self.api.post('/api-token-auth/', data = data)
-    logging.debug(response.json())
 
     # Process response and save
     #self.api.token = response.json()['token']

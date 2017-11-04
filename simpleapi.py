@@ -22,11 +22,15 @@ class API(object):
 
   def get(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
-    return self.session.get(uri, *args, **kwargs)
+    response = self.session.get(uri, *args, **kwargs)
+    logging.debug(response.text)
+    return response
 
   def post(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
-    return self.session.post(uri, *args, **kwargs)
+    response = self.session.post(uri, *args, **kwargs)
+    logging.debug(response.text)
+    return response
 
 
 ##
