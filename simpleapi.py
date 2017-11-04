@@ -18,7 +18,6 @@ class API(object):
     if isinstance(uri, tuple):
       base, inputs = uri[0], uri[1:]
       uri = base.format(*inputs)
-      logging.warn(uri)
     return requests.compat.urljoin(self.endpoint, uri)
 
   def get(self, uri, *args, **kwargs):
@@ -69,8 +68,9 @@ class TokenAPI(APIProxy):
       self.api.session.headers.pop('Authorization', None)
 
   def assign_token_if_exists(self, response):
-    token = response.json().get('token', None)
-    if token:
-      logging.debug('Assigning token %s', token)
-      self.token = token
+    if response.status_code == requests.codes.ok and response.content:
+      token = response.json().get('token', None)
+      if token:
+        logging.debug('Assigning token %s', token)
+        self.token = token
     pass
