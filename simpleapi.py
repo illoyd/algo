@@ -24,22 +24,30 @@ class API(object):
     return self.session.post(uri, *args, **kwargs)
 
 
-class TokenAPI(object):
+##
+# Passthrough proxy for APIs
+class APIProxy(object):
+  def __init__(self, api):
+    self.api = api
+
+  def __getattr__(self, name):
+        return getattr(self.api, name)
+
+##
+# Include Token detection for APIs
+class TokenAPI(APIProxy):
   def __init__(self, api, token = None):
     self.api = api
-    self.set_token(token)
+    self.token = token
 
-  def get(self, *args, **kwargs):
-    return self.api.get(*args, **kwargs)
+  @property
+  def token(self):
+    return self._token
 
-  def post(self, *args, **kwargs):
-    return self.api.post(*args, **kwargs)
-
-  def set_token(self, new_token):
-    self.token = new_token
-    if self.token:
-      self.api.session.headers.update({'Authorization': 'Token ' + self.token})
+  @token.setter
+  def token(self, val):
+    self._token = val
+    if val:
+      self.api.session.headers.update({'Authorization': 'Token ' + val})
     else:
       self.api.session.headers.pop('Authorization', None)
-    pass
-
