@@ -119,11 +119,16 @@ def main(args = {}):
   for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
     logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
     if execute:
-      client.sell(symbol, abs(delta))
+      response = client.sell(symbol, abs(delta))
+      if response.status_code == requests.codes.ok:
+        logging.info('    Ok! Order is %s', response.json()['state'])
+      else:
+        logging.warn(response.text)
 
   # Sleep a bit...
-  logging.info('TAKE A BREATH...')
-  time.sleep(5)
+  if execute:
+    logging.info('TAKE A BREATH...')
+    time.sleep(5)
 
   # Perform buys
   logging.info('STEP 10: BUY')
@@ -131,7 +136,11 @@ def main(args = {}):
     limit = round( mid_quotes[symbol] * 1.02, 2 )
     logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
     if execute:
-      client.buy(symbol, abs(delta), limit)
+      response = client.buy(symbol, abs(delta), limit)
+      if response.status_code == requests.codes.ok:
+        logging.info('    Ok! Order is %s', response.json()['state'])
+      else:
+        logging.warn(response.text)
 
   # Log out
   logging.info('STEP 11: SIGN OUT')
