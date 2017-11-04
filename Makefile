@@ -13,7 +13,7 @@ clean:
 	rm build/$(action_name).zip
 
 zip: clean
-	zip -r build/$(action_name).zip __main__.py simpleapi.py helper.py robinhood.py algo.py
+	zip -r build/$(action_name).zip *.py
 
 invoke:
 	bx wsk action invoke $(action_name) --blocking --result
@@ -26,8 +26,8 @@ build-docker:
 	&& docker tag $(docker_image) $(docker_username)/$(docker_image) \
 	&& docker push $(docker_username)/$(docker_image)
 
-deploy:
-	bx wsk action update $(action_name) --docker $(docker_username)/$(docker_image) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID}
+deploy: zip
+	bx wsk action update $(action_name) --docker $(docker_username)/$(docker_image) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID} -p execute true
 
 create-trigger: delete-trigger
 	# Create a trigger to run at 10:30 EST (15:30 UTC)
