@@ -61,8 +61,8 @@ class Client(object):
     pass
 
   def logout(self):
-    self.api.post('/api-token-logout/')
-    self.username, self.token = None, None
+    response = self.api.post('/api-token-logout/')
+    self.username, self.api.token = None, None
     pass
 
   ##
