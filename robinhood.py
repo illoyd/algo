@@ -95,7 +95,7 @@ class Client(object):
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
     # Get watchlist
-    response = self.api.get('/watchlists/' + name + '/').json()
+    response = self.api.get(('/watchlists/{}/', name)).json()
 
     # For every watchlist entry, look up the instrument to get the symbol
     w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
@@ -103,7 +103,7 @@ class Client(object):
 
   def add_to_watchlist(self, name, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
-    return self.api.post('/watchlists/' + name + '/bulk_add/', data={ 'symbols': symbol_list }).json()
+    return self.api.post(('/watchlists/{}/bulk_add/', name), data={ 'symbols': symbol_list }).json()
 
   ##
   # Get the instrument details
@@ -116,7 +116,7 @@ class Client(object):
     # TODO: Turn this into a real cache, but for now...
     if not self.instrument_cache.get(symbol_or_id):
       logging.info('Finding instrument %s', symbol_or_id)
-      instrument = self.api.get('/instruments/' + symbol_or_id + '/').json()
+      instrument = self.api.get(('/instruments/{}/', symbol_or_id)).json()
       self.instrument_cache[instrument['symbol']] = instrument
       self.instrument_cache[instrument['id']] = instrument
 
@@ -137,13 +137,13 @@ class Client(object):
   # Get current account portfolio
   # @return A response object of the portfolio
   def portfolio(self):
-    return self.api.get('/accounts/' + self.account_id + '/portfolio/').json()
+    return self.api.get(('/accounts/{}/portfolio/', self.account_id)).json()
 
   ##
   # Get all positions; note that this includes closed positions!
   # @return A list of positions as hashes
   def positions(self):
-    positions = self.api.get('/accounts/' + self.account_id + '/positions/')
+    positions = self.api.get(('/accounts/{}/positions/', self.account_id))
     return positions.json()['results']
 
   ##
