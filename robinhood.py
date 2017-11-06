@@ -34,7 +34,9 @@ class Client(object):
 
     # Activate the client
     self.api = simpleapi.TokenAPI(
-      simpleapi.API('https://api.robinhood.com/'),
+      simpleapi.MemoryCacheAPI(
+        simpleapi.API('https://api.robinhood.com/')
+      ),
       token = token
     )
 

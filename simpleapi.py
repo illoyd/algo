@@ -20,6 +20,9 @@ class API(object):
       uri = base.format(*inputs)
     return requests.compat.urljoin(self.endpoint, uri)
 
+  def build_full_uri(self, uri, *args, **kwargs):
+    return requests.Request('GET', self.relative_uri(uri), *args, **kwargs).prepare().url
+
   def get(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
     response = self.session.get(uri, *args, **kwargs)
@@ -79,3 +82,16 @@ class TokenAPI(APIProxy):
         logging.debug('Assigning token %s', token)
         self.token = token
     pass
+
+##
+# Memory Cache API
+class MemoryCacheAPI(APIProxy):
+  def __init__(self, api):
+    super().__init__(api)
+    self.cache = {}
+
+  def get(self, uri, *args, **kwargs):
+    full_uri = self.build_full_uri(uri, *args, **kwargs)
+    if not self.cache.get(full_uri, None):
+      self.cache[full_uri] = self.api.get(uri, *args, **kwargs)
+    return self.cache[full_uri]
