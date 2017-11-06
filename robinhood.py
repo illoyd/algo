@@ -232,11 +232,16 @@ class Client(object):
     # TODO FIx this!
     return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
 
+  @property
+  def markets(self):
+    return Markets(self.api)
+
+  @property
   def nyse_market(self):
-    return Market(Markets(self.api), 'XNYS')
+    return Market(self.markets, 'XNYS')
 
   def are_markets_open(self, date = None):
-    return self.nyse_market().is_open(date)
+    return self.nyse_market.is_open(date)
 
 
 class Account(resourceful.Instance):
