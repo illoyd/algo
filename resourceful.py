@@ -65,7 +65,7 @@ class Collection(Resource):
 
   ##
   # Get the index, or general, URI
-  def list(self, object_class = None):
+  def list(self, instance_class = None):
     # Get first pass of data
     response = PaginatedResponse(self.get(None))
     items = response.results
@@ -76,8 +76,9 @@ class Collection(Resource):
       items.concat(response.results)
 
     # Convert items to objects
-    if object_class:
-      items = [ object_class(self, item) for item in items ]
+    instance_class = instance_class or self.INSTANCE_CLASS
+    if instance_class:
+      items = [ instance_class(self, item) for item in items ]
 
     return items
 
