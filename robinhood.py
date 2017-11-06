@@ -281,9 +281,6 @@ class Positions(resourceful.Collection):
 class Market(resourceful.Instance):
   ID_FIELD = 'mic'
 
-  def __init__(self, api_or_parent, id = None):
-    super().__init__(api_or_parent, id, id_field = 'mic')
-
   def hours(self, date = None):
     date = date or datetime.datetime.now()
     year, month, day = date.year, date.month, date.day
