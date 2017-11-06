@@ -63,15 +63,28 @@ class Collection(Resource):
 ##
 # An instance
 class Instance(Resource):
-  def __init__(self, api_or_parent, endpoint, id = None, data = {}):
-    super().__init__(api_or_parent, endpoint + id + '/')
+  def __init__(self, api_or_parent, id_or_data = None, id_field = 'id'):
+    self._id_field = id
 
-    self.data = data
-    if id:
-      self.data['id'] = id
+    if isinstance(id_or_data, dict):
+      self.data = id_or_data
+      id = data[self._id_field]
+    else:
+      id = id_or_data
+
+    super().__init__(api_or_parent, str(id) + '/')
+
+  @property
+  def id(self):
+    return self[self._id_field]
 
   def __getitem__(self, key):
+    if self.data is None:
+      self.data = Response(self.get(None)).results()
     return self.data[key]
+
+  def __setitem__(self, key, value):
+    self.data[key] = value
 
 
 class Response(object):
@@ -82,6 +95,10 @@ class Response(object):
   def json(self):
     return self.content
 
+  @property
+  def results(self):
+    return self.content.get('results', self.content)
+
   def __getitem__(self, key):
     return self.content[key]
 
@@ -91,11 +108,10 @@ class Response(object):
 
 class PaginatedResponse(Response):
 
+  @property
   def next(self):
     return self.content.get('next', None)
 
+  @property
   def previous(self):
     return self.content.get('previous', None)
-
-  def results(self):
-    return self.content.get('results', self.response)
