@@ -233,28 +233,14 @@ class Client(object):
     return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
 
   def nyse_market(self):
-    return Market(self.api, 'XNYS')
+    return Market(Markets(self.api), 'XNYS')
 
-  def are_markets_open(self):
-    response = self.nyse_market().hours()
-    logging.debug(response.json())
-    return response.json().get('is_open', False)
-
-
-class Accounts(resourceful.Collection):
-  def __init__(self, api_or_parent):
-    super().__init__(api_or_parent, 'accounts/')
-
-  def list(self):
-    return super().list(Account)
-
-  def account(self, id):
-    return Account(self, id)
+  def are_markets_open(self, date = None):
+    return self.nyse_market().is_open(date)
 
 
 class Account(resourceful.Instance):
-  def __init__(self, api_or_parent, id = None):
-    super().__init__(api_or_parent, id, id_field = 'account_number')
+  ID_FIELD = 'account_number'
 
   def positions(self):
     return Positions(self)
@@ -265,6 +251,19 @@ class Account(resourceful.Instance):
     for pp in positions:
       pp['symbol'] = self.instrument(pp['instrument'])['symbol']
     return pd.Series({ pp['symbol']: float(pp['quantity']) for pp in positions })
+
+
+class Accounts(resourceful.Collection):
+  ENDPOINT = 'accounts/'
+  INSTANCE_CLASS = Account
+  def __init__(self, api_or_parent):
+    super().__init__(api_or_parent, 'accounts/')
+
+  def list(self):
+    return super().list(Account)
+
+  def account(self, id):
+    return Account(self, id)
 
 
 class Positions(resourceful.Collection):
@@ -279,14 +278,24 @@ class Positions(resourceful.Collection):
     return positions.json()['results']
 
 
-
-
-
 class Market(resourceful.Instance):
-  def __init__(self, api_or_parent, id = None):
-    super().__init__(api_or_parent, 'markets/', id)
+  ID_FIELD = 'mic'
 
-  def hours(self, date = datetime.datetime.now()):
+  def __init__(self, api_or_parent, id = None):
+    super().__init__(api_or_parent, id, id_field = 'mic')
+
+  def hours(self, date = None):
+    date = date or datetime.datetime.now()
     year, month, day = date.year, date.month, date.day
     uri = ('hours/{}-{}-{}/', year, month, day)
     return resourceful.Response(self.get(uri))
+
+  def is_open(self, date = None):
+    return self.hours(date)['is_open']
+
+
+class Markets(resourceful.Collection):
+  ENDPOINT = 'markets/'
+  INSTANCE_CLASS = Market
+  def __init__(self, api_or_parent):
+    super().__init__(api_or_parent, 'markets/')

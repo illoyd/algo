@@ -86,12 +86,11 @@ class Collection(Resource):
 ##
 # An instance
 class Instance(Resource):
-  def __init__(self, api_or_parent, id_or_data = None, id_field = 'id'):
-    self._id_field = id_field
+  def __init__(self, api_or_parent, id_or_data = None):
 
     if isinstance(id_or_data, dict):
       self.data = id_or_data
-      id = self.data.get(self._id_field, None)
+      id = self.data.get(self.ID_FIELD, None)
     else:
       self.data = None
       id = id_or_data
@@ -100,7 +99,7 @@ class Instance(Resource):
 
   @property
   def id(self):
-    return self[self._id_field]
+    return self[self.ID_FIELD]
 
   def __getitem__(self, key):
     if self.data is None:
