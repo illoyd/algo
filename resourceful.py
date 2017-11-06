@@ -28,9 +28,9 @@ class Collection(object):
 ##
 # Resource!
 class Resource(object):
-  def __init__(self, api_or_parent, endpoint):
+  def __init__(self, api_or_parent, endpoint = None):
     self.api_or_parent = api_or_parent
-    self.endpoint = endpoint
+    self.endpoint = endpoint or self.ENDPOINT
 
   ##
   # Delegate GET to api or parent

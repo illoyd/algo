@@ -160,15 +160,14 @@ class Client(object):
   # Get all positions; note that this includes closed positions!
   # @return A list of positions as hashes
   def positions(self):
-    positions = self.api.get(('/accounts/{}/positions/', self.account_id))
-    return positions.json()['results']
+    return Positions(self.account()).list()
 
   ##
   # Get all open positions; removes any closed positions from list
   # @return A list of open positions
   def open_positions(self):
     positions = self.positions()
-    positions = [ position for position in positions if float(position['quantity']) > 0.0 ]
+    positions = [ position for position in positions if position.quantity > 0.0 ]
     for position in positions:
       position['symbol'] = self.instrument(position['instrument'])['symbol']
     return pd.Series({ p['symbol']: float(p['quantity']) for p in positions })
@@ -250,19 +249,10 @@ class Account(resourceful.Instance):
   def positions(self):
     return Positions(self)
 
-  def open_positions(self):
-    positions = self.positions().list()
-    positions = [ pp for pp in positions if float(pp['quantity']) > 0.0 ]
-    for pp in positions:
-      pp['symbol'] = self.instrument(pp['instrument'])['symbol']
-    return pd.Series({ pp['symbol']: float(pp['quantity']) for pp in positions })
-
 
 class Accounts(resourceful.Collection):
   ENDPOINT = 'accounts/'
   INSTANCE_CLASS = Account
-  def __init__(self, api_or_parent):
-    super().__init__(api_or_parent, 'accounts/')
 
   def list(self):
     return super().list(Account)
@@ -271,16 +261,21 @@ class Accounts(resourceful.Collection):
     return Account(self, id)
 
 
-class Positions(resourceful.Collection):
-  def __init__(self, api_or_parent):
-    super().__init__(api_or_parent, 'positions/')
+class Position(resourceful.Instance):
+  ID_FIELD = 'id'
 
-  ##
-  # Get all positions; note that this includes closed positions!
-  # @return A list of positions as hashes
-  def positions(self):
-    positions = self.api.get(('/accounts/{}/positions/', self.account_id))
-    return positions.json()['results']
+  @property
+  def quantity(self):
+    return float(self['quantity'])
+
+  @property
+  def is_open(self):
+    return self.quantity > 0.0
+
+
+class Positions(resourceful.Collection):
+  ENDPOINT = 'positions/'
+  INSTANCE_CLASS = Position
 
 
 class Market(resourceful.Instance):
@@ -299,5 +294,3 @@ class Market(resourceful.Instance):
 class Markets(resourceful.Collection):
   ENDPOINT = 'markets/'
   INSTANCE_CLASS = Market
-  def __init__(self, api_or_parent):
-    super().__init__(api_or_parent, 'markets/')
