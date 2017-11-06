@@ -257,6 +257,12 @@ class Account(resourceful.Instance):
   def positions(self):
     return Positions(self)
 
+  def open_positions(self):
+    positions = self.positions().list()
+    positions = [ pp for pp in positions if float(pp['quantity']) > 0.0 ]
+    for pp in positions:
+      pp['symbol'] = self.instrument(pp['instrument'])['symbol']
+    return pd.Series({ pp['symbol']: float(pp['quantity']) for pp in positions })
 
 
 class Positions(resourceful.Collection):
@@ -269,6 +275,9 @@ class Positions(resourceful.Collection):
   def positions(self):
     positions = self.api.get(('/accounts/{}/positions/', self.account_id))
     return positions.json()['results']
+
+
+
 
 
 class Market(resourceful.Instance):
