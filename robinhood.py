@@ -126,22 +126,24 @@ class Client(object):
   ##
   # Get accounts for this user
   def accounts(self):
-    accounts = self.api.get('accounts')
+    accounts = Accounts(self.api).list() #self.api.get('accounts')
 
     # Save the first account ID
-    self.account_id = accounts.json()[0]['account_number']
+    self.account_id = accounts[0]['account_number']
 
-    # Return the account record
-    return accounts.json()
+    # Return the accounts list
+    return accounts
 
+  ##
+  # Get the primary (first?) account
   def account(self):
 
     # If no account ID, look it up
     if not self.account_id:
       account = Accounts(self.api).list()[0]
-      self.account_id = account['id']
+      self.account_id = account.id
     else:
-      account = Account(self.api, self.account_id)
+      account = Account(Accounts(self.api), self.account_id)
     return account
 
 
@@ -236,13 +238,16 @@ class Client(object):
     logging.debug(response.json())
     return response.json().get('is_open', False)
 
+
 class Accounts(resourceful.Collection):
   def __init__(self, api_or_parent):
-    super().__init__(self, api_or_parent, 'accounts/')
+    super().__init__(api_or_parent, 'accounts/')
+
+  def list(self):
+    return super().list(Account)
 
   def account(self, id):
-    return Account(self, id=id)
-
+    return Account(self, id)
 
 
 class Account(resourceful.Instance):
