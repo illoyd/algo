@@ -236,10 +236,18 @@ class Client(object):
     logging.debug(response.json())
     return response.json().get('is_open', False)
 
+class Accounts(resourceful.Collection):
+  def __init__(self, api_or_parent):
+    super().__init__(self, api_or_parent, 'accounts/')
+
+  def account(self, id):
+    return Account(self, id=id)
+
+
 
 class Account(resourceful.Instance):
   def __init__(self, api_or_parent, id = None):
-    super().__init__(api_or_parent, 'accounts/', id)
+    super().__init__(api_or_parent, id, id_field = 'account_number')
 
   def positions(self):
     return Positions(self)
