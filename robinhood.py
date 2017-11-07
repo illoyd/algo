@@ -34,7 +34,7 @@ class Client(object):
 
     # Activate the client
     self.api = simpleapi.TokenAPI(
-      simpleapi.API('https://api.robinhood.com'),
+      simpleapi.API('https://api.robinhood.com/'),
       token = token
     )
 
@@ -126,13 +126,27 @@ class Client(object):
   ##
   # Get accounts for this user
   def accounts(self):
-    accounts = self.api.get('accounts')
+    accounts = Accounts(self.api).list() #self.api.get('accounts')
 
     # Save the first account ID
-    self.account_id = accounts.json()[0]['account_number']
+    self.account_id = accounts[0]['account_number']
 
-    # Return the account record
-    return accounts.json()
+    # Return the accounts list
+    return accounts
+
+  ##
+  # Get the primary (first?) account
+  def account(self):
+
+    # If no account ID, look it up
+    if not self.account_id:
+      account = Accounts(self.api).list()[0]
+      self.account_id = account.id
+    else:
+      account = Account(Accounts(self.api), self.account_id)
+    return account
+
+
 
   ##
   # Get current account portfolio
@@ -216,17 +230,61 @@ class Client(object):
     # TODO FIx this!
     return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
 
-  def markets(self):
-    return Market(self.api)
+  def nyse_market(self):
+    return Market(self.api, 'XNYS')
 
   def are_markets_open(self):
-    return self.markets().hours('XNYS').json()['is_open']
+    response = self.nyse_market().hours()
+    logging.debug(response.json())
+    return response.json().get('is_open', False)
 
-class Market(resourceful.Resource):
-  def __init__(self, api):
-    super().__init__(api, '/markets/')
 
-  def hours(self, id):
-    year, month, day = datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day
-    uri = ('{}{}/hours/{}-{}-{}/', self.base_uri, id, year, month, day)
-    return self.api.get(uri)
+class Accounts(resourceful.Collection):
+  def __init__(self, api_or_parent):
+    super().__init__(api_or_parent, 'accounts/')
+
+  def list(self):
+    return super().list(Account)
+
+  def account(self, id):
+    return Account(self, id)
+
+
+class Account(resourceful.Instance):
+  def __init__(self, api_or_parent, id = None):
+    super().__init__(api_or_parent, id, id_field = 'account_number')
+
+  def positions(self):
+    return Positions(self)
+
+  def open_positions(self):
+    positions = self.positions().list()
+    positions = [ pp for pp in positions if float(pp['quantity']) > 0.0 ]
+    for pp in positions:
+      pp['symbol'] = self.instrument(pp['instrument'])['symbol']
+    return pd.Series({ pp['symbol']: float(pp['quantity']) for pp in positions })
+
+
+class Positions(resourceful.Collection):
+  def __init__(self, api_or_parent):
+    super().__init__(api_or_parent, 'positions/')
+
+  ##
+  # Get all positions; note that this includes closed positions!
+  # @return A list of positions as hashes
+  def positions(self):
+    positions = self.api.get(('/accounts/{}/positions/', self.account_id))
+    return positions.json()['results']
+
+
+
+
+
+class Market(resourceful.Instance):
+  def __init__(self, api_or_parent, id = None):
+    super().__init__(api_or_parent, 'markets/', id)
+
+  def hours(self, date = datetime.datetime.now()):
+    year, month, day = date.year, date.month, date.day
+    uri = ('hours/{}-{}-{}/', year, month, day)
+    return resourceful.Response(self.get(uri))
