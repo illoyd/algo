@@ -73,7 +73,7 @@ class Collection(Resource):
     # While there is a next link, follow
     while response.next:
       response = PaginatedResponse(self.get(response.next))
-      items.concat(response.results)
+      items.extend(response.results)
 
     # Convert items to objects
     instance_class = instance_class or self.INSTANCE_CLASS
