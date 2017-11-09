@@ -232,6 +232,10 @@ class Client(object):
     return 'https://api.robinhood.com/accounts/' + self.account_id + '/'
 
   @property
+  def orders(self):
+    return Orders(self.api)
+
+  @property
   def markets(self):
     return Markets(self.api)
 
@@ -276,6 +280,15 @@ class Position(resourceful.Instance):
 class Positions(resourceful.Collection):
   ENDPOINT = 'positions/'
   INSTANCE_CLASS = Position
+
+
+class Order(resourceful.Instance):
+  ID_FIELD = 'id'
+
+
+class Orders(resourceful.Collection):
+  ENDPOINT = 'orders/'
+  INSTANCE_CLASS = Order
 
 
 class Market(resourceful.Instance):
