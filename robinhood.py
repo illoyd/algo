@@ -93,10 +93,17 @@ class Client(object):
 
     return pd.concat(quotes, axis=1)
 
+  @property
+  def watchlists(self):
+    return Watchlists(self.api)
+
   ##
   # Get watchlist
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
+
+    return Watchlist(self.watchlists, name)
+
     # Get watchlist
     response = self.api.get(('/watchlists/{}/', name)).json()
 
@@ -307,3 +314,47 @@ class Market(resourceful.Instance):
 class Markets(resourceful.Collection):
   ENDPOINT = 'markets/'
   INSTANCE_CLASS = Market
+
+
+class Watchlist(resourceful.Instance):
+  ID_FIELD = 'name'
+
+  def add(self, id_or_symbol):
+    id = helper.parse_instrument_id(id_or_symbol)
+    if id:
+      return add_instrument(id)
+    else:
+      return add_symbols(id_or_symbol)
+
+  def remove(self, id_or_symbol):
+    id = helper.parse_instrument_id(id_or_symbol)
+    if id:
+      return remove_instrument(id)
+    else:
+      return remove_symbol(id_or_symbol)
+
+  def add_symbols(self, *symbols):
+    symbol_list = ','.join([*symbols])
+    return self.post('bulk_add/', data={ 'symbols': symbol_list })
+
+  def remove_symbol(self, symbol):
+    # For every symbol, find its instrument ID and delete
+    instrument_id = helper.symbol_table.get(symbol)
+    if not instrument_id:
+      instrument_id = Instrument(self.get('/instrument', params = { 'symbol': symbol } )).id
+    return remove_instrument(instrument_id)
+
+  def add_instrument(self, instrument_id):
+    return self.post(instrument_id)
+
+  def remove_instrument(self, instrument_id):
+    return self.delete(instrument_id)
+
+
+class Watchlists(resourceful.Collection):
+  ENDPOINT = 'watchlists/'
+  INSTANCE_CLASS = Watchlist
+
+
+class Instrument(resourceful.Instance):
+  ID_FIELD = 'id'
