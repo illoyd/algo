@@ -178,17 +178,16 @@ class Client(object):
   ##
   # Get the current total equity, which is cash + held assets
   # @return Float representing total equity
-  # TODO Convert to decimal!
+  @property
   def equity(self):
     return float(self.portfolio()['equity'])
 
   ##
   # Get the current total margin, which is the Robinhood Gold limit
   # @return Float representing total margin
-  # TODO Convert to decimal!
-  # TODO Get from the account object!
+  @property
   def margin(self):
-    return float(6000.0)
+    return float(self.account()['margin_balances']['margin_limit'])
 
   def quotes(self, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
@@ -253,6 +252,7 @@ class Client(object):
 class Account(resourceful.Instance):
   ID_FIELD = 'account_number'
 
+  @property
   def positions(self):
     return Positions(self)
 
