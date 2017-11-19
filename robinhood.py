@@ -344,6 +344,18 @@ class WatchlistInstrument(resourceful.Instance):
 class Watchlist(resourceful.Collection):
   INSTANCE_CLASS = WatchlistInstrument
 
+  def instruments(self):
+    return [ ii.instrument for ii in self.list() ]
+
+  def symbols(self):
+    return [ ii.symbol for ii in self.instruments() ]
+
+  def add_all(self, *id_or_symbols):
+    return [ self.add(id_or_symbol) for id_or_symbol in id_or_symbols ]
+
+  def remove_all(self, *id_or_symbols):
+    return [ self.remove(id_or_symbol) for id_or_symbol in id_or_symbols ]
+
   def add(self, id_or_symbol):
     if hasattr(id_or_symbol, 'id'):
       return self.add_instrument(id_or_symbol.id)
