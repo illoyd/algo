@@ -103,10 +103,6 @@ class Client(object):
   def watchlist(self, name="Default"):
     return Watchlist(self.watchlists, name + '/')
 
-  def add_to_watchlist(self, name, *symbols_or_ids):
-    symbol_list = ','.join([*symbols_or_ids])
-    return self.api.post(('/watchlists/{}/bulk_add/', name), data={ 'symbols': symbol_list }).json()
-
   ##
   # Get the instrument details
   def instrument(self, symbol_or_id):
