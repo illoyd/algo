@@ -126,7 +126,10 @@ class Client(object):
 
   ##
   # Get accounts for this user
+  @property
   def accounts(self):
+    return Accounts(self.api)
+
     accounts = Accounts(self.api).list() #self.api.get('accounts')
 
     # Save the first account ID
@@ -137,17 +140,18 @@ class Client(object):
 
   ##
   # Get the primary (first?) account
-  def account(self):
+  def account(self, account_id = None):
 
-    # If no account ID, look it up
-    if not self.account_id:
-      account = Accounts(self.api).list()[0]
-      self.account_id = account.id
+    # If given an account ID, or if defined on this Client, return an account resource
+    if account_id or self.account_id:
+      account = self.accounts.account(account_id or self.account_id)
+
+    # Otherwise, look up the default account, save the ID, and return the resource
     else:
-      account = Account(Accounts(self.api), self.account_id)
+      account = self.accounts.default
+      self.account_id = account.id
+
     return account
-
-
 
   ##
   # Get current account portfolio
@@ -252,16 +256,18 @@ class Account(resourceful.Instance):
   def positions(self):
     return Positions(self)
 
-
+##
+# Account collections
 class Accounts(resourceful.Collection):
   ENDPOINT = 'accounts/'
   INSTANCE_CLASS = Account
 
-  def list(self):
-    return super().list(Account)
-
   def account(self, id):
     return Account(self, id)
+
+  @property
+  def default(self):
+    return self[0]
 
 
 class Position(resourceful.Instance):
