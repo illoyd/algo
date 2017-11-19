@@ -91,7 +91,7 @@ def main(args = {}):
 
   # Short circuit if no target portfolio is found!
   if len(target_portfolio_weights) == 0:
-    return { 'error': 'No optimal portfolio found.' }
+    return { 'status': 'error', 'reason': 'No optimal portfolio found.' }
 
   # Determine available captial to play with
   logging.info('STEP 4: CAPITAL')
