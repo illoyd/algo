@@ -30,6 +30,18 @@ class Resource(object):
     return self.api_or_parent.post(uri, *args, **kwargs)
 
   ##
+  # Delegate PUT to api or parent
+  def put(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent.put(uri, *args, **kwargs)
+
+  ##
+  # Delegate HEAD to api or parent
+  def head(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent.head(uri, *args, **kwargs)
+
+  ##
   # Delegate DELETE to api or parent
   def delete(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
