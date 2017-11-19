@@ -58,6 +58,12 @@ class Resource(object):
     uri = ('{}{}/', self.endpoint, id)
     return PaginatedResponse(self.get(uri))
 
+  ##
+  # A repr helper
+  def _to_repr(self, **data):
+    labels = " ".join([ label + "={" + label + "}" for label in data.keys() ])
+    return ("<{class_name} " + labels + ">").format(class_name = type(self).__name__, **data)
+
 
 ##
 # A collection
@@ -82,6 +88,8 @@ class Collection(Resource):
 
     return items
 
+  def __repr__(self):
+    return self._to_repr(endpoint = self.endpoint)
 
 ##
 # An instance
@@ -112,6 +120,9 @@ class Instance(Resource):
   def reload(self):
     self.data = Response(self.get(None)).results
     pass
+
+  def __repr__(self):
+    return self._to_repr(id = self.id)
 
 
 class Response(object):
