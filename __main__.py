@@ -58,7 +58,7 @@ def main(args = {}):
 
   # Get universe of symbols
   logging.info('STEP 1: WATCHLIST')
-  universe = client.watchlist()
+  universe = client.watchlist().symbols()
   logging.info('Found %s', ', '.join(universe))
 
   # Get historical data for universe (only last X days)
