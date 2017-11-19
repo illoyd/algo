@@ -30,6 +30,12 @@ class Resource(object):
     return self.api_or_parent.post(uri, *args, **kwargs)
 
   ##
+  # Delegate DELETE to api or parent
+  def delete(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent.delete(uri, *args, **kwargs)
+
+  ##
   # Return a completed URI
   def relative_uri(self, uri):
     if isinstance(uri, tuple):

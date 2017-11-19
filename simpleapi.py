@@ -38,6 +38,12 @@ class API(object):
     logging.debug(response.text)
     return response
 
+  def delete(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    response = self.session.delete(uri, *args, **kwargs)
+    logging.debug(response.text)
+    return response
+
 
 ##
 # Passthrough proxy for APIs
