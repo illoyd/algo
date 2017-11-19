@@ -121,21 +121,15 @@ class Client(object):
     return self.instrument_cache[symbol_or_id]
 
   ##
-  # Get accounts for this user
+  # Get accounts associated with this user.
+  # @returns An Accounts collection.
   @property
   def accounts(self):
     return Accounts(self.api)
 
-    accounts = Accounts(self.api).list() #self.api.get('accounts')
-
-    # Save the first account ID
-    self.account_id = accounts[0]['account_number']
-
-    # Return the accounts list
-    return accounts
-
   ##
-  # Get the primary (first?) account
+  # Get an identified account, defaulting to the first account if no ID given.
+  # @returns An Account resource.
   def account(self, account_id = None):
 
     # If given an account ID, or if defined on this Client, return an account resource
