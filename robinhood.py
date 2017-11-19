@@ -340,14 +340,14 @@ class Watchlist(resourceful.Collection):
   INSTANCE_CLASS = WatchlistInstrument
 
   def add(self, id_or_symbol):
-    id = helper.parse_instrument_id(id_or_symbol)
+    id = helper.id_for(id_or_symbol)
     if id:
       return add_instrument(id)
     else:
       return add_symbols(id_or_symbol)
 
   def remove(self, id_or_symbol):
-    id = helper.parse_instrument_id(id_or_symbol)
+    id = helper.id_for(id_or_symbol)
     if id:
       return remove_instrument(id)
     else:
