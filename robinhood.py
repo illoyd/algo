@@ -144,9 +144,9 @@ class Client(object):
   # Get the instrument details
   def instrument(self, symbol_or_id):
     # Extract an ID from a string, if available, and use as the search term
-    match = re.match('https://api.robinhood.com/instruments/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/?', symbol_or_id)
+    match = helper.id_for(symbol_or_id)
     if match:
-      symbol_or_id = match[1]
+      symbol_or_id = match
 
     # TODO: Turn this into a real cache, but for now...
     if not self.instrument_cache.get(symbol_or_id):
@@ -167,7 +167,7 @@ class Client(object):
   # Get all positions; note that this includes closed positions!
   # @return A list of positions as hashes
   def positions(self):
-    return Positions(self.account()).list()
+    return self.account().positions
 
   ##
   # Get all open positions; removes any closed positions from list
