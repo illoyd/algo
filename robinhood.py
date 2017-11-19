@@ -93,6 +93,20 @@ class Client(object):
     return account
 
   ##
+  # Get the current total equity, which is cash + held assets
+  # @return Float representing total equity
+  @property
+  def equity(self):
+    return float(self.portfolio()['equity'])
+
+  ##
+  # Get the current total margin, which is the Robinhood Gold limit
+  # @return Float representing total margin
+  @property
+  def margin(self):
+    return float(self.account()['margin_balances']['margin_limit'])
+
+  ##
   # Get quotes
   # @return A pandas dataframe of symbols and prices
   def historical_prices(self, *symbols_or_ids):
@@ -164,20 +178,6 @@ class Client(object):
     for position in positions:
       position['symbol'] = self.instrument(position['instrument'])['symbol']
     return pd.Series({ p['symbol']: float(p['quantity']) for p in positions })
-
-  ##
-  # Get the current total equity, which is cash + held assets
-  # @return Float representing total equity
-  @property
-  def equity(self):
-    return float(self.portfolio()['equity'])
-
-  ##
-  # Get the current total margin, which is the Robinhood Gold limit
-  # @return Float representing total margin
-  @property
-  def margin(self):
-    return float(self.account()['margin_balances']['margin_limit'])
 
   def quotes(self, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
