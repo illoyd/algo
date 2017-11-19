@@ -161,7 +161,7 @@ class Client(object):
   # Get current account portfolio
   # @return A response object of the portfolio
   def portfolio(self):
-    return self.api.get(('/accounts/{}/portfolio/', self.account_id)).json()
+    return self.account().portfolio
 
   ##
   # Get all positions; note that this includes closed positions!
@@ -246,6 +246,11 @@ class Account(resourceful.Instance):
   def positions(self):
     return Positions(self)
 
+  @property
+  def portfolio(self):
+    return Portfolio(self, 'portfolio')
+
+
 ##
 # Account collections
 class Accounts(resourceful.Collection):
@@ -318,6 +323,15 @@ class Market(resourceful.Instance):
 class Markets(resourceful.Collection):
   ENDPOINT = 'markets/'
   INSTANCE_CLASS = Market
+
+
+class Portfolio(resourceful.Instance):
+  ID_FIELD = 'url'
+
+  @property
+  def equity(self):
+    return float(self['equity'])
+
 
 ##
 # Watchlist Instrument class, for use with a Watchlist.
