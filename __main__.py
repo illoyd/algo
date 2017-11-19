@@ -95,8 +95,8 @@ def main(args = {}):
 
   # Determine available captial to play with
   logging.info('STEP 4: CAPITAL')
-  capital = (client.equity() * 0.98) + client.margin()
-  logging.info('Capital: %s', capital)
+  capital = (client.equity * 0.98) + client.margin
+  logging.info('Capital: %s (equity: %s, margin: %s)', capital, client.equity, client.margin)
 
   # Get mid quotes
   logging.info('STEP 5: QUOTES')
