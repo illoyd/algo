@@ -70,6 +70,29 @@ class Client(object):
     pass
 
   ##
+  # Get accounts associated with this user.
+  # @returns An Accounts collection.
+  @property
+  def accounts(self):
+    return Accounts(self.api)
+
+  ##
+  # Get an identified account, defaulting to the first account if no ID given.
+  # @returns An Account resource.
+  def account(self, account_id = None):
+
+    # If given an account ID, or if defined on this Client, return an account resource
+    if account_id or self.account_id:
+      account = self.accounts.account(account_id or self.account_id)
+
+    # Otherwise, look up the default account, save the ID, and return the resource
+    else:
+      account = self.accounts.default
+      self.account_id = account.id
+
+    return account
+
+  ##
   # Get quotes
   # @return A pandas dataframe of symbols and prices
   def historical_prices(self, *symbols_or_ids):
@@ -119,29 +142,6 @@ class Client(object):
       self.instrument_cache[instrument['id']] = instrument
 
     return self.instrument_cache[symbol_or_id]
-
-  ##
-  # Get accounts associated with this user.
-  # @returns An Accounts collection.
-  @property
-  def accounts(self):
-    return Accounts(self.api)
-
-  ##
-  # Get an identified account, defaulting to the first account if no ID given.
-  # @returns An Account resource.
-  def account(self, account_id = None):
-
-    # If given an account ID, or if defined on this Client, return an account resource
-    if account_id or self.account_id:
-      account = self.accounts.account(account_id or self.account_id)
-
-    # Otherwise, look up the default account, save the ID, and return the resource
-    else:
-      account = self.accounts.default
-      self.account_id = account.id
-
-    return account
 
   ##
   # Get current account portfolio
