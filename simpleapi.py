@@ -97,10 +97,13 @@ class TokenAPI(APIProxy):
 class MemoryCacheAPI(APIProxy):
   def __init__(self, api):
     super().__init__(api)
-    self.cache = {}
+    self.reset()
 
   def get(self, uri, *args, **kwargs):
     full_uri = self.build_full_uri(uri, *args, **kwargs)
-    if not self.cache.get(full_uri, None):
-      self.cache[full_uri] = self.api.get(uri, *args, **kwargs)
-    return self.cache[full_uri]
+    if not self._cache.get(full_uri, None):
+      self._cache[full_uri] = self.api.get(uri, *args, **kwargs)
+    return self._cache[full_uri]
+
+  def reset(self):
+    self._cache = {}
