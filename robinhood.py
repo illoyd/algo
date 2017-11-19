@@ -345,18 +345,20 @@ class Watchlist(resourceful.Collection):
   INSTANCE_CLASS = WatchlistInstrument
 
   def add(self, id_or_symbol):
-    id = helper.id_for(id_or_symbol)
-    if id:
-      return add_instrument(id)
+    if hasattr(id_or_symbol, 'id'):
+      return self.add_instrument(id_or_symbol.id)
+    elif helper.id_for(id_or_symbol):
+      return self.add_instrument(helper.id_for(id_or_symbol))
     else:
-      return add_symbols(id_or_symbol)
+      return self.add_symbols(id_or_symbol)
 
   def remove(self, id_or_symbol):
-    id = helper.id_for(id_or_symbol)
-    if id:
-      return remove_instrument(id)
+    if hasattr(id_or_symbol, 'id'):
+      return self.remove_instrument(id_or_symbol.id)
+    elif helper.id_for(id_or_symbol):
+      return self.remove_instrument(helper.id_for(id_or_symbol))
     else:
-      return remove_symbol(id_or_symbol)
+      return self.remove_symbol(id_or_symbol)
 
   def add_symbols(self, *symbols):
     symbol_list = ','.join([*symbols])
