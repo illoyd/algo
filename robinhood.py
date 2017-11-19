@@ -366,8 +366,8 @@ class Watchlist(resourceful.Collection):
     # For every symbol, find its instrument ID and delete
     instrument_id = helper.symbol_table.get(symbol)
     if not instrument_id:
-      instrument_id = Instrument(self.get('/instrument', params = { 'symbol': symbol } )).id
-    return remove_instrument(instrument_id)
+      instrument_id = Instruments(self, root=True).find_by(symbol = symbol).id
+    return self.remove_instrument(instrument_id)
 
   def add_instrument(self, instrument_id):
     return self.post(instrument_id)

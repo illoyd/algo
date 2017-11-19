@@ -76,9 +76,9 @@ class Collection(Resource):
 
   ##
   # Get the index, or general, URI
-  def list(self, instance_class = None):
+  def list(self, instance_class = None, **kwargs):
     # Get first pass of data
-    response = PaginatedResponse(self.get(None))
+    response = PaginatedResponse(self.get(None, **kwargs))
     items = response.results
 
     # While there is a next link, follow
@@ -92,6 +92,14 @@ class Collection(Resource):
       items = [ instance_class(self, item) for item in items ]
 
     return items
+
+  def find_all_by(self, **kwargs):
+    items = self.list(params = kwargs)
+    return items if items else []
+
+  def find_by(self, **kwargs):
+    items = self.find_all_by(**kwargs)
+    return items[0] if items else None
 
   def __repr__(self):
     return self._to_repr(endpoint = self.endpoint)
