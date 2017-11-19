@@ -13,7 +13,7 @@ class API(object):
     self.session.headers.update({ 'Accept': 'application/json' })
 
   ##
-  # Return a completed URI
+  # Return a completed, relative URI
   def relative_uri(self, uri):
     if isinstance(uri, tuple):
       base, inputs = uri[0], uri[1:]
@@ -21,6 +21,9 @@ class API(object):
     return requests.compat.urljoin(self.endpoint, uri)
 
   def build_full_uri(self, uri, *args, **kwargs):
+    return self._absolute_uri(uri, *args, **kwargs)
+
+  def _absolute_uri(self, uri = None, *args, **kwargs):
     return requests.Request('GET', self.relative_uri(uri), *args, **kwargs).prepare().url
 
   def get(self, uri, *args, **kwargs):
@@ -32,6 +35,12 @@ class API(object):
   def post(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
     response = self.session.post(uri, *args, **kwargs)
+    logging.debug(response.text)
+    return response
+
+  def delete(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    response = self.session.delete(uri, *args, **kwargs)
     logging.debug(response.text)
     return response
 

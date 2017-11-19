@@ -55,4 +55,7 @@ deploy: delete-rule delete-trigger update-action create-trigger create-rule
 	@echo Deployed
 
 get-orders:
-  python -c "import tools; tools.download_orders_to_csv()"
+	python -c "import tools; tools.download_orders_to_csv()"
+
+i:
+	python -i .

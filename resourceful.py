@@ -9,28 +9,13 @@ import simpleapi
 
 
 ##
-# Collection!
-class Collection(object):
-  def __init__(self, api, base_uri):
-    self.api = api
-    self.base_uri = base_uri
-
-  def list(self):
-    if self._list is None:
-      self._list = self.get_list()
-    return self._list
-
-  def get_list(self):
-    return self.api.get(self.base_uri)
-
-
-
-##
 # Resource!
 class Resource(object):
-  def __init__(self, api_or_parent, endpoint = None):
+  def __init__(self, api_or_parent, endpoint = None, root = False):
     self.api_or_parent = api_or_parent
     self.endpoint = endpoint or self.ENDPOINT
+    if root and not self.endpoint[0] == "/":
+      self.endpoint = "/" + self.endpoint
 
   ##
   # Delegate GET to api or parent
@@ -43,6 +28,12 @@ class Resource(object):
   def post(self, uri, *args, **kwargs):
     uri = self.relative_uri(uri)
     return self.api_or_parent.post(uri, *args, **kwargs)
+
+  ##
+  # Delegate DELETE to api or parent
+  def delete(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent.delete(uri, *args, **kwargs)
 
   ##
   # Return a completed URI
@@ -58,6 +49,26 @@ class Resource(object):
     uri = ('{}{}/', self.endpoint, id)
     return PaginatedResponse(self.get(uri))
 
+  @property
+  def endpoint(self):
+    return self._endpoint
+
+  @endpoint.setter
+  def endpoint(self, value):
+    self._endpoint = value
+
+  ##
+  # Compile the absolute URI for this object
+  def _absolute_uri(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent._absolute_uri(uri, *args, **kwargs)
+
+  ##
+  # A repr helper
+  def _to_repr(self, **data):
+    labels = " ".join([ label + "={" + label + "}" for label in data.keys() ])
+    return ("<{class_name} " + labels + ">").format(class_name = type(self).__name__, **data)
+
 
 ##
 # A collection
@@ -65,9 +76,9 @@ class Collection(Resource):
 
   ##
   # Get the index, or general, URI
-  def list(self, instance_class = None):
+  def list(self, instance_class = None, **kwargs):
     # Get first pass of data
-    response = PaginatedResponse(self.get(None))
+    response = PaginatedResponse(self.get(None, **kwargs))
     items = response.results
 
     # While there is a next link, follow
@@ -82,6 +93,16 @@ class Collection(Resource):
 
     return items
 
+  def find_all_by(self, **kwargs):
+    items = self.list(params = kwargs)
+    return items if items else []
+
+  def find_by(self, **kwargs):
+    items = self.find_all_by(**kwargs)
+    return items[0] if items else None
+
+  def __repr__(self):
+    return self._to_repr(endpoint = self.endpoint)
 
 ##
 # An instance
@@ -112,6 +133,9 @@ class Instance(Resource):
   def reload(self):
     self.data = Response(self.get(None)).results
     pass
+
+  def __repr__(self):
+    return self._to_repr(id = self.id)
 
 
 class Response(object):

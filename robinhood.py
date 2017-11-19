@@ -93,16 +93,15 @@ class Client(object):
 
     return pd.concat(quotes, axis=1)
 
+  @property
+  def watchlists(self):
+    return Watchlists(self.api)
+
   ##
   # Get watchlist
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
-    # Get watchlist
-    response = self.api.get(('/watchlists/{}/', name)).json()
-
-    # For every watchlist entry, look up the instrument to get the symbol
-    w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
-    return w
+    return Watchlist(self.watchlists, name + '/')
 
   def add_to_watchlist(self, name, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
@@ -291,6 +290,22 @@ class Orders(resourceful.Collection):
   INSTANCE_CLASS = Order
 
 
+class Instrument(resourceful.Instance):
+  ID_FIELD = 'id'
+
+  @property
+  def symbol(self):
+    return self['symbol']
+
+  def __repr__(self):
+    return self._to_repr(id = self.id, symbol = self.symbol)
+
+
+class Instruments(resourceful.Collection):
+  ENDPOINT = 'instruments/'
+  INSTANCE_CLASS = Instrument
+
+
 class Market(resourceful.Instance):
   ID_FIELD = 'mic'
 
@@ -307,3 +322,62 @@ class Market(resourceful.Instance):
 class Markets(resourceful.Collection):
   ENDPOINT = 'markets/'
   INSTANCE_CLASS = Market
+
+##
+# Watchlist Instrument class, for use with a Watchlist.
+class WatchlistInstrument(resourceful.Instance):
+  ID_FIELD = 'url'
+
+  @resourceful.Instance.endpoint.setter
+  def endpoint(self, value):
+    self._endpoint = helper.id_for(value)
+
+  @property
+  def id(self):
+    return helper.id_for(self[self.ID_FIELD])
+
+  @property
+  def instrument(self):
+    return Instrument(Instruments(self.api_or_parent, root=True), self.id)
+
+
+class Watchlist(resourceful.Collection):
+  INSTANCE_CLASS = WatchlistInstrument
+
+  def add(self, id_or_symbol):
+    if hasattr(id_or_symbol, 'id'):
+      return self.add_instrument(id_or_symbol.id)
+    elif helper.id_for(id_or_symbol):
+      return self.add_instrument(helper.id_for(id_or_symbol))
+    else:
+      return self.add_symbols(id_or_symbol)
+
+  def remove(self, id_or_symbol):
+    if hasattr(id_or_symbol, 'id'):
+      return self.remove_instrument(id_or_symbol.id)
+    elif helper.id_for(id_or_symbol):
+      return self.remove_instrument(helper.id_for(id_or_symbol))
+    else:
+      return self.remove_symbol(id_or_symbol)
+
+  def add_symbols(self, *symbols):
+    symbol_list = ','.join([*symbols])
+    return self.post('bulk_add/', data={ 'symbols': symbol_list })
+
+  def remove_symbol(self, symbol):
+    # For every symbol, find its instrument ID and delete
+    instrument_id = helper.symbol_table.get(symbol)
+    if not instrument_id:
+      instrument_id = Instruments(self, root=True).find_by(symbol = symbol).id
+    return self.remove_instrument(instrument_id)
+
+  def add_instrument(self, instrument_id):
+    return self.post(instrument_id)
+
+  def remove_instrument(self, instrument_id):
+    return self.delete(instrument_id)
+
+
+class Watchlists(resourceful.Collection):
+  ENDPOINT = 'watchlists/'
+  INSTANCE_CLASS = Watchlist
