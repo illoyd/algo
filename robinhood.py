@@ -298,6 +298,22 @@ class Orders(resourceful.Collection):
   INSTANCE_CLASS = Order
 
 
+class Instrument(resourceful.Instance):
+  ID_FIELD = 'id'
+
+  @property
+  def symbol(self):
+    return self['symbol']
+
+  def __repr__(self):
+    return self._to_repr(id = self.id, symbol = self.symbol)
+
+
+class Instruments(resourceful.Collection):
+  ENDPOINT = 'instruments/'
+  INSTANCE_CLASS = Instrument
+
+
 class Market(resourceful.Instance):
   ID_FIELD = 'mic'
 
@@ -354,7 +370,3 @@ class Watchlist(resourceful.Instance):
 class Watchlists(resourceful.Collection):
   ENDPOINT = 'watchlists/'
   INSTANCE_CLASS = Watchlist
-
-
-class Instrument(resourceful.Instance):
-  ID_FIELD = 'id'
