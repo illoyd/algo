@@ -17,12 +17,12 @@ class Share
     state :closed
   end
 
-  attr_reader :asset, :open_price, :open_time, :close_price, :close_time
+  attr_reader :asset, :open_price, :open_timestamp, :close_price, :close_timestamp
 
-  def initialize(asset, open_price, open_time)
+  def initialize(asset, open_price, open_timestamp)
     @asset = asset
-    if open_price && open_time
-      open!(open_price, open_time)
+    if open_price && open_timestamp
+      open!(open_price, open_timestamp)
     end
   end
 
@@ -34,12 +34,39 @@ class Share
     end
   end
 
+  def profit
+    pl = self.profit_or_loss
+    pl if pl > 0.0
+  end
+
+  def loss
+    pl = self.profit_or_loss
+    pl if pl < 0.0
+  end
+
+  def open_date
+    @open_timestamp.strftime("%Y-%m-%d")
+  end
+
+  def open_time
+    @open_timestamp.strftime("%H:%M:%S")
+  end
+
+  def close_date
+    @close_timestamp&.strftime("%Y-%m-%d")
+  end
+
+  def close_time
+    @close_timestamp&.strftime("%H:%M:%S")
+  end
+
+
   def to_a
-    [@asset, @open_time, @open_price, @close_time, @close_price]
+    [@asset, open_date, open_time, @open_price, close_date, close_time, @close_price, profit_or_loss, profit, loss]
   end
 
   def to_s
-    "#{ @asset } #{ @open_time }@#{ @open_price } #{ '/' if @close_time } #{ @close_time }#{ '@' if @close_time }#{ @close_price }".strip
+    "#{ @asset } #{ @open_timestamp }@#{ @open_price } #{ '/' if @close_timestamp } #{ @close_timestamp }#{ '@' if @close_timestamp }#{ @close_price }".strip
   end
 
   def <=>(other)
@@ -48,14 +75,14 @@ class Share
 
   protected
 
-  def open(open_price, open_time)
+  def open(open_price, open_timestamp)
     @open_price = open_price
-    @open_time = open_time
+    @open_timestamp = open_timestamp
   end
 
-  def close(close_price, close_time)
+  def close(close_price, close_timestamp)
     @close_price = close_price
-    @close_time = close_time
+    @close_timestamp = close_timestamp
   end
 
 end
@@ -87,22 +114,22 @@ class LotManager
     @closed_lots = Hash.new { |h,k| h[k] = FIFO.new }
   end
 
-  def open(asset, open_price, open_time, units)
+  def open(asset, open_price, open_timestamp, units)
     units = units.to_i
     open_price = open_price.to_f
-    open_time = DateTime.parse(open_time)
+    open_timestamp = DateTime.parse(open_timestamp)
 
-    shares = units.times().to_a.map{ Share.new(asset, open_price, open_time) }
+    shares = units.times().to_a.map{ Share.new(asset, open_price, open_timestamp) }
     @open_lots[asset].push(*shares)
   end
 
-  def close(asset, close_price, close_time, units)
+  def close(asset, close_price, close_timestamp, units)
     units = units.to_i.abs
     close_price = close_price.to_f
-    close_time = DateTime.parse(close_time)
+    close_timestamp = DateTime.parse(close_timestamp)
 
     shares = @open_lots[asset].shift(units)
-    shares.each { |share| share.close!(close_price, close_time) }
+    shares.each { |share| share.close!(close_price, close_timestamp) }
     @closed_lots[asset].push(*shares)
   end
 end
@@ -129,7 +156,7 @@ end
 
 # Save shares to CSV
 CSV.open("orders-analysis.csv", "wb") do |csv|
-  csv << %w( asset open_time open_price close_time close_price )
+  csv << %w( asset open_date open_time open_price close_date close_time close_price profit_or_loss profit loss)
 
   # Output closed lots
   lots.closed_lots.each do |asset,lots|
