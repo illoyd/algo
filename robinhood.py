@@ -101,15 +101,7 @@ class Client(object):
   # Get watchlist
   # @return An array of symbols included in this watchlist
   def watchlist(self, name="Default"):
-
-    return Watchlist(self.watchlists, name)
-
-    # Get watchlist
-    response = self.api.get(('/watchlists/{}/', name)).json()
-
-    # For every watchlist entry, look up the instrument to get the symbol
-    w = [ self.instrument(entry['instrument'])['symbol'] for entry in response['results'] ]
-    return w
+    return Watchlist(self.watchlists, name + '/')
 
   def add_to_watchlist(self, name, *symbols_or_ids):
     symbol_list = ','.join([*symbols_or_ids])
@@ -331,9 +323,22 @@ class Markets(resourceful.Collection):
   ENDPOINT = 'markets/'
   INSTANCE_CLASS = Market
 
-
+##
+# Watchlist Instrument class, for use with a Watchlist.
 class WatchlistInstrument(resourceful.Instance):
-  ID_FIELD = 'instrument'
+  ID_FIELD = 'url'
+
+  @resourceful.Instance.endpoint.setter
+  def endpoint(self, value):
+    self._endpoint = helper.id_for(value)
+
+  @property
+  def id(self):
+    return helper.id_for(self[self.ID_FIELD])
+
+  @property
+  def instrument(self):
+    return Instrument(Instruments(self.api_or_parent, root=True), self.id)
 
 
 class Watchlist(resourceful.Collection):

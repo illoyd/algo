@@ -28,9 +28,11 @@ class Collection(object):
 ##
 # Resource!
 class Resource(object):
-  def __init__(self, api_or_parent, endpoint = None):
+  def __init__(self, api_or_parent, endpoint = None, root = False):
     self.api_or_parent = api_or_parent
     self.endpoint = endpoint or self.ENDPOINT
+    if root and not self.endpoint[0] == "/":
+      self.endpoint = "/" + self.endpoint
 
   ##
   # Delegate GET to api or parent
@@ -57,6 +59,14 @@ class Resource(object):
   def find(self, id):
     uri = ('{}{}/', self.endpoint, id)
     return PaginatedResponse(self.get(uri))
+
+  @property
+  def endpoint(self):
+    return self._endpoint
+
+  @endpoint.setter
+  def endpoint(self, value):
+    self._endpoint = value
 
   ##
   # Compile the absolute URI for this object
