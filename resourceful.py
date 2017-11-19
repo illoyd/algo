@@ -74,24 +74,29 @@ class Resource(object):
 # A collection
 class Collection(Resource):
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._list = None
+
   ##
   # Get the index, or general, URI
   def list(self, instance_class = None, **kwargs):
-    # Get first pass of data
-    response = PaginatedResponse(self.get(None, **kwargs))
-    items = response.results
+    if not self._list:
+      # Get first pass of data
+      response = PaginatedResponse(self.get(None, **kwargs))
+      self._list = response.results
 
-    # While there is a next link, follow
-    while response.next:
-      response = PaginatedResponse(self.get(response.next))
-      items.extend(response.results)
+      # While there is a next link, follow
+      while response.next:
+        response = PaginatedResponse(self.get(response.next))
+        self._list.extend(response.results)
 
-    # Convert items to objects
-    instance_class = instance_class or self.INSTANCE_CLASS
-    if instance_class:
-      items = [ instance_class(self, item) for item in items ]
+      # Convert items to objects
+      instance_class = instance_class or self.INSTANCE_CLASS
+      if instance_class:
+        self._list = [ instance_class(self, item) for item in self._list ]
 
-    return items
+    return self._list
 
   def find_all_by(self, **kwargs):
     items = self.list(params = kwargs)
@@ -100,6 +105,9 @@ class Collection(Resource):
   def find_by(self, **kwargs):
     items = self.find_all_by(**kwargs)
     return items[0] if items else None
+
+  def __getitem__(self, key):
+    return self.list()[key]
 
   def __repr__(self):
     return self._to_repr(endpoint = self.endpoint)
