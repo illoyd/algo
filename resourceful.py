@@ -59,6 +59,12 @@ class Resource(object):
     return PaginatedResponse(self.get(uri))
 
   ##
+  # Compile the absolute URI for this object
+  def _absolute_uri(self, uri, *args, **kwargs):
+    uri = self.relative_uri(uri)
+    return self.api_or_parent._absolute_uri(uri, *args, **kwargs)
+
+  ##
   # A repr helper
   def _to_repr(self, **data):
     labels = " ".join([ label + "={" + label + "}" for label in data.keys() ])
