@@ -332,8 +332,12 @@ class Markets(resourceful.Collection):
   INSTANCE_CLASS = Market
 
 
-class Watchlist(resourceful.Instance):
-  ID_FIELD = 'name'
+class WatchlistInstrument(resourceful.Instance):
+  ID_FIELD = 'instrument'
+
+
+class Watchlist(resourceful.Collection):
+  INSTANCE_CLASS = WatchlistInstrument
 
   def add(self, id_or_symbol):
     id = helper.parse_instrument_id(id_or_symbol)
