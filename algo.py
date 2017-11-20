@@ -19,37 +19,30 @@ import helper
 # Algo base, for working with signals and other items
 class Algo(object):
 
+  def optimise(self):
+    return None
+
+
+##
+# Client Algo, which uses a robinhood.Client object
+class ClientAlgo(Algo):
+
   ##
   # Initialise with a client object
+  # @client A robinhood.Client object
   def __init__(self, client):
     self.client = client
 
 
 ##
-# Sharpe Algo class - for handling the calculations!
-class WatchlistSharpeAlgo(Algo):
+# Client Algo, which uses a robinhood.Client object
+class SharpeAlgo(Algo):
 
   ##
-  # Initialise with additional parameters for a Sharpe algo
-  def __init__(self, client, lookback = 21):
-    super().__init__(client)
-    self.lookback = lookback
-
-  ##
-  # Optimise
-  def optimise(self):
-    u = self.universe()
-    p = self.prices(u)
-    w = self.weights(p)
-    return w
-
-  ##
-  # Get the universe of stocks from the Robinhood Watchlist
-  # @returns A list of symbols
-  def universe(self):
-    universe = self.client.watchlist().symbols()
-    logging.info('Found %s', ', '.join(universe))
-    return universe
+  # Initialise with a client object
+  # @client A robinhood.Client object
+  def __init__(self, client):
+    self.client = client
 
   ##
   # Get all prices for the given universe
@@ -103,3 +96,50 @@ class WatchlistSharpeAlgo(Algo):
     except ValueError as e:
         logging.error(e)
         return (pd.Series(), 0.0)
+
+
+##
+# Defined-Universe algo - for calculating a Sharpe portfolio for a pre-defined universe.
+class UniverseSharpeAlgo(SharpeAlgo):
+
+  ##
+  # Create a new defined-universe Sharpe algo
+  # @universe An iterable list of symbols representing the universe
+  def __init__(self, client, universe, lookback=21):
+    super().__init__(client)
+    self.universe = universe
+    self.lookback = lookback
+
+  def optimise(self):
+    u = self.universe
+    p = self.prices(u)
+    w = self.weights(p)
+    return w
+
+
+##
+# Sharpe Algo class - for handling the calculations!
+class WatchlistSharpeAlgo(SharpeAlgo):
+
+  ##
+  # Initialise with additional parameters for a Sharpe algo
+  def __init__(self, client, lookback = 21):
+    super().__init__(client)
+    self.lookback = lookback
+
+  ##
+  # Optimise
+  def optimise(self):
+    u = self.universe()
+    p = self.prices(u)
+    w = self.weights(p)
+    return w
+
+  ##
+  # Get the universe of stocks from the Robinhood Watchlist
+  # @returns A list of symbols
+  def universe(self):
+    universe = self.client.watchlist().symbols()
+    logging.info('Found %s', ', '.join(universe))
+    return universe
+
