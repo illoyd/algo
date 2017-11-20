@@ -129,7 +129,11 @@ class Client(object):
     # TODO: Turn this into a real cache, but for now...
     if not self.instrument_cache.get(symbol_or_id):
       logging.info('Finding instrument %s', symbol_or_id)
-      instrument = self.api.get(('/instruments/{}/', symbol_or_id)).json()
+      if helper.id_for(symbol_or_id):
+        instrument = self.api.get(('/instruments/{}/', symbol_or_id)).json()
+      else:
+        instrument = self.api.get('/instruments/', params = { 'symbol': symbol_or_id} ).json()['results'][0]
+
       self.instrument_cache[instrument['symbol']] = instrument
       self.instrument_cache[instrument['id']] = instrument
 
