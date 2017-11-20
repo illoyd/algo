@@ -41,11 +41,18 @@ class Client(object):
     )
 
     # Perform login
-    if (not self.api.token) and username and password:
+    if (not self.is_logged_in()) and username and password:
       self.login(username, password)
 
     # Add account id
     self.account_id = account_id
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, type, value, traceback):
+    if self.is_logged_in():
+      self.logout()
 
   ##
   # Perform login to Robinhood, and save the returned token
@@ -68,6 +75,10 @@ class Client(object):
     response = self.api.post('/api-token-logout/')
     self.username, self.api.token = None, None
     pass
+
+  def is_logged_in(self):
+    return bool(self.api.token)
+
 
   ##
   # Get accounts associated with this user.
@@ -151,7 +162,11 @@ class Client(object):
     # TODO: Turn this into a real cache, but for now...
     if not self.instrument_cache.get(symbol_or_id):
       logging.info('Finding instrument %s', symbol_or_id)
-      instrument = self.api.get(('/instruments/{}/', symbol_or_id)).json()
+      if helper.id_for(symbol_or_id):
+        instrument = self.api.get(('/instruments/{}/', symbol_or_id)).json()
+      else:
+        instrument = self.api.get('/instruments/', params = { 'symbol': symbol_or_id} ).json()['results'][0]
+
       self.instrument_cache[instrument['symbol']] = instrument
       self.instrument_cache[instrument['id']] = instrument
 
