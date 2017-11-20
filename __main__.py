@@ -42,122 +42,118 @@ def main(args = {}):
   logging.info('  market_check: %s', market_check)
   logging.info('  execute:   %s', execute)
 
-  # Sign into Robinhood
-  client = robinhood.Client(username = username, password = password, account_id = account_id)
+  # Activate a Robinhood client
+  with robinhood.Client(username = username, password = password, account_id = account_id) as client:
 
-  # Check if markets are open
-  if market_check:
-    logging.info('PRE: MARKETS OPEN?')
-    if not client.are_markets_open():
-      logging.warn('Markets are closed! Cancelling')
-      client.logout()
-      return {
-        "status": "not run",
-        "reason": "markets closed"
-      }
+    # Check if markets are open
+    if market_check:
+      logging.info('PRE: MARKETS OPEN?')
+      if not client.are_markets_open():
+        logging.warn('Markets are closed! Cancelling')
+        client.logout()
+        return {
+          "status": "not run",
+          "reason": "markets closed"
+        }
 
-  # Get universe of symbols
-  logging.info('STEP 1: WATCHLIST')
-  universe = client.watchlist().symbols()
-  logging.info('Found %s', ', '.join(universe))
-
-  # Get historical data for universe (only last X days)
-  logging.info('STEP 2: PRICES')
-  prices = client.historical_prices(*universe).iloc[-20:]
-  logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
-  logging.debug(prices)
-
-  # Calculate the target portfolio weights based on Sharpe
-  logging.info('STEP 3: TARGET WEIGHTS')
-  target_portfolio_weights = calculate_target_portfolio_weights(prices)
-  logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
-  logging.debug(target_portfolio_weights.round(2))
-
-  # Short circuit if no target portfolio is found!
-  if len(target_portfolio_weights) == 0:
-    universe = [ 'TLT', 'HYG', 'SPY' ]
+    # Get universe of symbols
+    logging.info('STEP 1: WATCHLIST')
+    universe = client.watchlist().symbols()
+    logging.info('Found %s', ', '.join(universe))
 
     # Get historical data for universe (only last X days)
-    logging.info('STEP 2a: RETRY PRICES')
-    prices = client.historical_prices(*universe).iloc[-20:-1]
+    logging.info('STEP 2: PRICES')
+    prices = client.historical_prices(*universe).iloc[-20:]
     logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
     logging.debug(prices)
 
     # Calculate the target portfolio weights based on Sharpe
-    logging.info('STEP 3a: RETRY TARGET WEIGHTS')
+    logging.info('STEP 3: TARGET WEIGHTS')
     target_portfolio_weights = calculate_target_portfolio_weights(prices)
     logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
     logging.debug(target_portfolio_weights.round(2))
 
-  # Short circuit if no target portfolio is found!
-  if len(target_portfolio_weights) == 0:
-    return { 'status': 'error', 'reason': 'No optimal portfolio found.' }
+    # Short circuit if no target portfolio is found!
+    if len(target_portfolio_weights) == 0:
+      universe = [ 'TLT', 'HYG', 'SPY' ]
 
-  # Determine available captial to play with
-  logging.info('STEP 4: CAPITAL')
-  capital = (client.equity * 0.98) + client.margin
-  logging.info('Capital: %s (equity: %s, margin: %s)', capital, client.equity, client.margin)
+      # Get historical data for universe (only last X days)
+      logging.info('STEP 2a: RETRY PRICES')
+      prices = client.historical_prices(*universe).iloc[-20:-1]
+      logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
+      logging.debug(prices)
 
-  # Get mid quotes
-  logging.info('STEP 5: QUOTES')
-  mid_quotes = client.quotes(*universe)
-  logging.info('Found quotes: %s', ', '.join([ '{}@{:0.4f}'.format(s, q) for s, q in mid_quotes.iteritems() ]))
-  logging.debug(mid_quotes)
+      # Calculate the target portfolio weights based on Sharpe
+      logging.info('STEP 3a: RETRY TARGET WEIGHTS')
+      target_portfolio_weights = calculate_target_portfolio_weights(prices)
+      logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
+      logging.debug(target_portfolio_weights.round(2))
 
-  # Convert the target weights into target positions
-  logging.info('STEP 6: TARGET HOLDINGS')
-  target_portfolio = calculate_target_portfolio(target_portfolio_weights, mid_quotes, capital)
-  logging.info('Target holdings: %s', portfolio_stringify(target_portfolio))
-  logging.debug(target_portfolio)
+    # Short circuit if no target portfolio is found!
+    if len(target_portfolio_weights) == 0:
+      return { 'status': 'error', 'reason': 'No optimal portfolio found.' }
 
-  # Calculate total portfolio value...
-  capital_used = (target_portfolio * mid_quotes).sum()
-  capital_utilisation = capital_used / capital
-  logging.info('TOTAL PORTFOLIO VALUE: %s (%s)', capital_used, capital_utilisation)
+    # Determine available captial to play with
+    logging.info('STEP 4: CAPITAL')
+    capital = (client.equity * 0.98) + client.margin
+    logging.info('Capital: %s (equity: %s, margin: %s)', capital, client.equity, client.margin)
 
-  # Get the current portfolio
-  logging.info('STEP 7: CURRENT HOLDINGS')
-  current_portfolio = client.open_positions()
-  logging.info('Current holdings: %s', portfolio_stringify(current_portfolio))
-  logging.debug(current_portfolio)
+    # Get mid quotes
+    logging.info('STEP 5: QUOTES')
+    mid_quotes = client.quotes(*universe)
+    logging.info('Found quotes: %s', ', '.join([ '{}@{:0.4f}'.format(s, q) for s, q in mid_quotes.iteritems() ]))
+    logging.debug(mid_quotes)
 
-  # Calculate the necessary movements
-  logging.info('STEP 8: DETERMINE MOVEMENTS')
-  portfolio_delta = target_portfolio.subtract(current_portfolio, fill_value = 0.0).sort_values()
-  logging.info('Delta: %s', portfolio_stringify(portfolio_delta))
-  logging.debug(portfolio_delta)
+    # Convert the target weights into target positions
+    logging.info('STEP 6: TARGET HOLDINGS')
+    target_portfolio = calculate_target_portfolio(target_portfolio_weights, mid_quotes, capital)
+    logging.info('Target holdings: %s', portfolio_stringify(target_portfolio))
+    logging.debug(target_portfolio)
 
-  # Perform sells
-  logging.info('STEP 9: SELL')
-  for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
-    logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
+    # Calculate total portfolio value...
+    capital_used = (target_portfolio * mid_quotes).sum()
+    capital_utilisation = capital_used / capital
+    logging.info('TOTAL PORTFOLIO VALUE: %s (%s)', capital_used, capital_utilisation)
+
+    # Get the current portfolio
+    logging.info('STEP 7: CURRENT HOLDINGS')
+    current_portfolio = client.open_positions()
+    logging.info('Current holdings: %s', portfolio_stringify(current_portfolio))
+    logging.debug(current_portfolio)
+
+    # Calculate the necessary movements
+    logging.info('STEP 8: DETERMINE MOVEMENTS')
+    portfolio_delta = target_portfolio.subtract(current_portfolio, fill_value = 0.0).sort_values()
+    logging.info('Delta: %s', portfolio_stringify(portfolio_delta))
+    logging.debug(portfolio_delta)
+
+    # Perform sells
+    logging.info('STEP 9: SELL')
+    for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
+      logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
+      if execute:
+        response = client.sell(symbol, abs(delta))
+        if response.status_code == requests.codes.ok:
+          logging.info('    Ok! Order is %s', response.json()['state'])
+        else:
+          logging.warn(response.text)
+
+    # Sleep a bit...
     if execute:
-      response = client.sell(symbol, abs(delta))
-      if response.status_code == requests.codes.ok:
-        logging.info('    Ok! Order is %s', response.json()['state'])
-      else:
-        logging.warn(response.text)
+      logging.info('TAKE A BREATH...')
+      time.sleep(5)
 
-  # Sleep a bit...
-  if execute:
-    logging.info('TAKE A BREATH...')
-    time.sleep(5)
-
-  # Perform buys
-  logging.info('STEP 10: BUY')
-  for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
-    limit = round( mid_quotes[symbol] * 1.02, 2 )
-    logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
-    if execute:
-      response = client.buy(symbol, abs(delta), limit)
-      if response.status_code == requests.codes.ok:
-        logging.info('    Ok! Order is %s', response.json()['state'])
-      else:
-        logging.warn(response.text)
-
-  # Log out
-  logging.info('STEP 11: SIGN OUT')
-  client.logout()
+    # Perform buys
+    logging.info('STEP 10: BUY')
+    for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
+      limit = round( mid_quotes[symbol] * 1.02, 2 )
+      logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
+      if execute:
+        response = client.buy(symbol, abs(delta), limit)
+        if response.status_code == requests.codes.ok:
+          logging.info('    Ok! Order is %s', response.json()['state'])
+        else:
+          logging.warn(response.text)
 
   # Boring stuff!
   return {
