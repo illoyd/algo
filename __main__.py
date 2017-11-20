@@ -101,15 +101,16 @@ def main(args = {}):
       # a. Calculate Primary's unused portion of portfolio
       # b. Scale Secondary to fit unused portfolio
       # c. Add weights together
-      secondary_weights *= (1.0 - primary_weights.sum())
+      if primary_weights.any():
+        secondary_weights *= (1.0 - primary_weights.sum())
       target_portfolio_weights = primary_weights.add(secondary_weights, fill_value=0.0)
 
     # Short circuit if no target portfolio is found!
-    if len(target_portfolio_weights) == 0:
+    if target_portfolio_weights.empty:
       target_portfolio_weights = algo.UniverseSharpeAlgo(client, [ 'TLT', 'HYG', 'SPY' ]).optimise()
 
     # Short circuit if no target portfolio is found!
-    if len(target_portfolio_weights) == 0:
+    if target_portfolio_weights.empty:
       return { 'status': 'error', 'reason': 'No optimal portfolio found.' }
 
     logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems() ]))
