@@ -177,7 +177,7 @@ class DNNAlgo(object):
   BUY  = 1
   SELL = 0
 
-  LOOKBACK = 30
+  LOOKBACK = 15
   MEASURES   = [ 'O', 'H', 'L', 'C', 'A', 'V' ]
   LOOKBACKS  = list(range(1, LOOKBACK+1))
   TRANSFORMS = [ 'SMA', 'MAX', 'MIN', 'STD' ]
@@ -209,7 +209,7 @@ class DNNAlgo(object):
     # Configure classifier
     feature_cols = [tf.feature_column.numeric_column(k) for k in self.FEATURES]
     self.classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
-      hidden_units=[1024, 512, 258],
+      hidden_units=[1024, 512, 258, 128, 64],
       n_classes=2,
       model_dir="./tmp/" + self.name)
 
