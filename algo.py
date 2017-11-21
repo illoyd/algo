@@ -12,6 +12,7 @@ import requests
 import dateutil
 import re
 import logging
+import itertools
 
 import helper
 
@@ -144,6 +145,31 @@ class WatchlistSharpeAlgo(SharpeAlgo):
     logging.info('Found %s', ', '.join(universe))
     return universe
 
+def filename_for(kind, name):
+  return "./data/%s/%s.csv" % ( kind, name, )
+
+def source_filename_for(symbol):
+  return filename_for('', symbol)
+
+def training_filename_for(symbol):
+  return filename_for('training', symbol)
+
+def test_filename_for(symbol):
+  return filename_for('test', symbol)
+
+def data_for(kind, name):
+  filename = filename_for(kind, name)
+  return pd.read_csv(filename, index_col = 0)
+
+def source_data_for(name):
+  return data_for('', name)
+
+def training_data_for(name):
+  return data_for('training', name)
+
+def test_data_for(name):
+  return data_for('test', name)
+
 
 ##
 # Machine Learning! oh boy...
@@ -151,73 +177,24 @@ class DNNAlgo(object):
   BUY  = 1
   SELL = 0
 
-  PERIODS = [ 3, 5, 7, 10, 12, 15, 30 ]
+  LOOKBACK = 30
+  MEASURES   = [ 'O', 'H', 'L', 'C', 'A', 'V' ]
+  LOOKBACKS  = list(range(1, LOOKBACK+1))
+  TRANSFORMS = [ 'SMA', 'MAX', 'MIN', 'STD' ]
+  PERIODS    = [ 3, 5, 7, 10, 12, 15, 30 ]
+
   FEATURES = [
-    "O0", "O1", "H1", "L1", "C1", "V1",
-    *[ 'SMA_O0_' + str(n) for n in PERIODS ],
-    *[ 'MAX_O0_' + str(n) for n in PERIODS ],
-    *[ 'MIN_O0_' + str(n) for n in PERIODS ],
-    *[ 'STD_O0_' + str(n) for n in PERIODS ],
-    *[ 'SMA_V1_' + str(n) for n in PERIODS ],
-    *[ 'MAX_V1_' + str(n) for n in PERIODS ],
-    *[ 'MIN_V1_' + str(n) for n in PERIODS ],
-    *[ 'STD_V1_' + str(n) for n in PERIODS ],
+    '%s%i_%s%i' % (t, p, m, l) for (t, p, m, l) in itertools.product( TRANSFORMS, PERIODS, MEASURES, LOOKBACKS )
   ]
   LABEL    = "action"
 
-  def __init__(self, name):
+  def __init__(self, name = 'TSLA'):
     self.name = name
 
   def classify(self, inputs):
     results = self.classifier.classify(self._input_fn(inputs, num_epochs=1, shuffle=False))
     logging.info(results)
     return results
-
-  def parse_yahoo(self):
-    data = pd.read_csv("./data/" + self.name + ".csv")
-
-    # Re-assign the existing values
-    data['O1'] = data['Open'].pct_change()
-    data['H1'] = data['High'].pct_change()
-    data['L1'] = data['Low'].pct_change()
-    data['C1'] = data['Adj Close'].pct_change()
-    data['V1'] = data['Volume'].pct_change()
-
-    # Add a T0, which is the opening price of the next forward period
-    data['O0'] = data['O1'].shift(-1)
-
-    # Add SMAs
-    for n in self.PERIODS:
-      rolling = data['O0'].rolling(window=n)
-      data['SMA_O0_' + str(n)] = rolling.mean()
-      data['MAX_O0_' + str(n)] = rolling.max()
-      data['MIN_O0_' + str(n)] = rolling.min()
-      data['STD_O0_' + str(n)] = rolling.std()
-
-      rolling = data['V1'].rolling(window=n)
-      data['SMA_V1_' + str(n)] = rolling.mean()
-      data['MAX_V1_' + str(n)] = rolling.max()
-      data['MIN_V1_' + str(n)] = rolling.min()
-      data['STD_V1_' + str(n)] = rolling.std()
-
-    # Add action (buy/sell)
-    data['action'] = (data['O0'].shift(-1) > data['O0']).astype(int)
-
-    # Save!
-    shuffled = data.dropna().sample(frac=1)
-    shuffled.index.name = 'Observation'
-    count = int(len(shuffled) * 0.8)
-
-    # Training set
-    training_filename = "./data/" + self.name + "_train.csv"
-    shuffled[:count].to_csv(training_filename)
-
-    # Testing set
-    test_filename = "./data/" + self.name + "_test.csv"
-    shuffled[count:].to_csv(test_filename)
-
-    return data
-
 
   def train(self, training_set = None, test_set = None):
 
@@ -232,7 +209,7 @@ class DNNAlgo(object):
     # Configure classifier
     feature_cols = [tf.feature_column.numeric_column(k) for k in self.FEATURES]
     self.classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
-      hidden_units=[10, 20, 20, 10],
+      hidden_units=[1024, 512, 258],
       n_classes=2,
       model_dir="./tmp/" + self.name)
 
@@ -252,3 +229,65 @@ class DNNAlgo(object):
       y=pd.Series(inputs[self.LABEL].values),
       num_epochs=num_epochs,
       shuffle=shuffle)
+
+
+def parse_yahoo(name):
+
+  # Read data from source and convert to percent changes
+  data = source_data_for(name)
+
+  data = data.pct_change()
+
+  # Prepare an empty list to hold the results
+  outputs = []
+
+  # For every lookback window...
+  for lookback in DNNAlgo.LOOKBACKS:
+    # Shift the data for this lookback
+    lookback_data = data.shift(lookback - 1)
+
+    tmp = pd.DataFrame()
+
+    # Add key values
+    tmp['O%i' % (lookback,)] = lookback_data['Open']
+    tmp['H%i' % (lookback,)] = lookback_data['High']
+    tmp['L%i' % (lookback,)] = lookback_data['Low']
+    tmp['C%i' % (lookback,)] = lookback_data['Close']
+    tmp['A%i' % (lookback,)] = lookback_data['Adj Close']
+    tmp['V%i' % (lookback,)] = lookback_data['Volume']
+
+    # Calculate measures over a rolling window
+    columns = list(tmp.columns.values)
+    for period in DNNAlgo.PERIODS:
+      for column in columns:
+        rolling = tmp[column].rolling(window=period)
+        tmp['SMA%i_%s' % (period, column)] = rolling.mean()
+        tmp['MAX%i_%s' % (period, column)] = rolling.max()
+        tmp['MIN%i_%s' % (period, column)] = rolling.min()
+        tmp['STD%i_%s' % (period, column)] = rolling.std()
+
+    outputs.append(tmp)
+
+  outputs = pd.DataFrame().join(outputs, how='outer')
+
+  # Determine action
+  outputs['action'] = (data['Open'].shift(-1) > data['Open']).astype(int)
+
+  # Clean NAs
+  outputs = outputs.dropna()
+
+  # Save!
+  shuffled = outputs.sample(frac=1).round(6)
+  shuffled.index.name = 'Date'
+  count = int(len(shuffled) * 0.8)
+
+  # Training set
+  training_filename = training_filename_for(name)
+  shuffled[:count].to_csv(training_filename)
+
+  # Testing set
+  test_filename = test_filename_for(name)
+  shuffled[count:].to_csv(test_filename)
+
+  return outputs
+

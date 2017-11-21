@@ -202,3 +202,14 @@ def calculate_target_portfolio(weights, mid_quotes, capital):
   shares = np.around(shares, 0)
 
   return shares
+
+
+def train():
+  pass
+
+
+##
+# Run pre-set-ups
+if __name__ == "__main__":
+  client = robinhood.Client()
+  tsla = algo.DNNAlgo('TSLA')
