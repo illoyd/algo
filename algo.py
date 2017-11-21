@@ -2,7 +2,7 @@
 import sys
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 import math
 import cvxopt as opt
 import cvxopt.solvers as optsolvers
@@ -173,121 +173,121 @@ def test_data_for(name):
 
 ##
 # Machine Learning! oh boy...
-class DNNAlgo(object):
-  BUY  = 1
-  SELL = 0
-
-  LOOKBACK = 30
-  MEASURES   = [ 'O', 'H', 'L', 'C', 'A', 'V' ]
-  LOOKBACKS  = list(range(1, LOOKBACK+1))
-  TRANSFORMS = [ 'SMA', 'MAX', 'MIN', 'STD' ]
-  PERIODS    = [ 3, 5, 7, 10, 12, 15, 30 ]
-
-  FEATURES = [
-    '%s%i_%s%i' % (t, p, m, l) for (t, p, m, l) in itertools.product( TRANSFORMS, PERIODS, MEASURES, LOOKBACKS )
-  ]
-  LABEL    = "action"
-
-  def __init__(self, name = 'TSLA'):
-    self.name = name
-
-  def classify(self, inputs):
-    results = self.classifier.classify(self._input_fn(inputs, num_epochs=1, shuffle=False))
-    logging.info(results)
-    return results
-
-  def train(self, training_set = None, test_set = None):
-
-    # Create a training set, if needed
-    if not training_set:
-      training_set = training_data_for(self.name)
-
-    # Create a testing set, if needed
-    if not test_set:
-      test_set = test_data_for(self.name)
-
-    # Configure classifier
-    feature_cols = [tf.feature_column.numeric_column(k) for k in self.FEATURES]
-    self.classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
-      hidden_units=[1024, 512, 258],
-      n_classes=2,
-      model_dir="./tmp/" + self.name)
-
-    # Perform training
-    self.classifier.train(input_fn=self._input_fn(training_set), steps=5000)
-
-    # Evaluate
-    ev = self.classifier.evaluate(input_fn=self._input_fn(test_set, num_epochs=1, shuffle=False))
-
-    # Output
-    print("Loss: {0:f}".format(ev["loss"]))
-    return ev
-
-  def _input_fn(self, inputs, num_epochs=None, shuffle=True):
-    return tf.estimator.inputs.pandas_input_fn(
-      x=pd.DataFrame({k: inputs[k].values for k in self.FEATURES}),
-      y=pd.Series(inputs[self.LABEL].values),
-      num_epochs=num_epochs,
-      shuffle=shuffle)
-
-
-def parse_yahoo(name):
-
-  # Read data from source and convert to percent changes
-  data = source_data_for(name)
-
-  data = data.pct_change()
-
-  # Prepare an empty list to hold the results
-  outputs = []
-
-  # For every lookback window...
-  for lookback in DNNAlgo.LOOKBACKS:
-    # Shift the data for this lookback
-    lookback_data = data.shift(lookback - 1)
-
-    tmp = pd.DataFrame()
-
-    # Add key values
-    tmp['O%i' % (lookback,)] = lookback_data['Open']
-    tmp['H%i' % (lookback,)] = lookback_data['High']
-    tmp['L%i' % (lookback,)] = lookback_data['Low']
-    tmp['C%i' % (lookback,)] = lookback_data['Close']
-    tmp['A%i' % (lookback,)] = lookback_data['Adj Close']
-    tmp['V%i' % (lookback,)] = lookback_data['Volume']
-
-    # Calculate measures over a rolling window
-    columns = list(tmp.columns.values)
-    for period in DNNAlgo.PERIODS:
-      for column in columns:
-        rolling = tmp[column].rolling(window=period)
-        tmp['SMA%i_%s' % (period, column)] = rolling.mean()
-        tmp['MAX%i_%s' % (period, column)] = rolling.max()
-        tmp['MIN%i_%s' % (period, column)] = rolling.min()
-        tmp['STD%i_%s' % (period, column)] = rolling.std()
-
-    outputs.append(tmp)
-
-  outputs = pd.DataFrame().join(outputs, how='outer')
-
-  # Determine action
-  outputs['action'] = (data['Open'].shift(-1) > data['Open']).astype(int)
-
-  # Clean NAs
-  outputs = outputs.dropna()
-
-  # Save!
-  shuffled = outputs.sample(frac=1).round(6)
-  shuffled.index.name = 'Date'
-  count = int(len(shuffled) * 0.8)
-
-  # Training set
-  training_filename = training_filename_for(name)
-  shuffled[:count].to_csv(training_filename)
-
-  # Testing set
-  test_filename = test_filename_for(name)
-  shuffled[count:].to_csv(test_filename)
-
-  return outputs
+# class DNNAlgo(object):
+#   BUY  = 1
+#   SELL = 0
+#
+#   LOOKBACK = 30
+#   MEASURES   = [ 'O', 'H', 'L', 'C', 'A', 'V' ]
+#   LOOKBACKS  = list(range(1, LOOKBACK+1))
+#   TRANSFORMS = [ 'SMA', 'MAX', 'MIN', 'STD' ]
+#   PERIODS    = [ 3, 5, 7, 10, 12, 15, 30 ]
+#
+#   FEATURES = [
+#     '%s%i_%s%i' % (t, p, m, l) for (t, p, m, l) in itertools.product( TRANSFORMS, PERIODS, MEASURES, LOOKBACKS )
+#   ]
+#   LABEL    = "action"
+#
+#   def __init__(self, name = 'TSLA'):
+#     self.name = name
+#
+#   def classify(self, inputs):
+#     results = self.classifier.classify(self._input_fn(inputs, num_epochs=1, shuffle=False))
+#     logging.info(results)
+#     return results
+#
+#   def train(self, training_set = None, test_set = None):
+#
+#     # Create a training set, if needed
+#     if not training_set:
+#       training_set = training_data_for(self.name)
+#
+#     # Create a testing set, if needed
+#     if not test_set:
+#       test_set = test_data_for(self.name)
+#
+#     # Configure classifier
+#     feature_cols = [tf.feature_column.numeric_column(k) for k in self.FEATURES]
+#     self.classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+#       hidden_units=[1024, 512, 258],
+#       n_classes=2,
+#       model_dir="./tmp/" + self.name)
+#
+#     # Perform training
+#     self.classifier.train(input_fn=self._input_fn(training_set), steps=5000)
+#
+#     # Evaluate
+#     ev = self.classifier.evaluate(input_fn=self._input_fn(test_set, num_epochs=1, shuffle=False))
+#
+#     # Output
+#     print("Loss: {0:f}".format(ev["loss"]))
+#     return ev
+#
+#   def _input_fn(self, inputs, num_epochs=None, shuffle=True):
+#     return tf.estimator.inputs.pandas_input_fn(
+#       x=pd.DataFrame({k: inputs[k].values for k in self.FEATURES}),
+#       y=pd.Series(inputs[self.LABEL].values),
+#       num_epochs=num_epochs,
+#       shuffle=shuffle)
+#
+#
+# def parse_yahoo(name):
+#
+#   # Read data from source and convert to percent changes
+#   data = source_data_for(name)
+#
+#   data = data.pct_change()
+#
+#   # Prepare an empty list to hold the results
+#   outputs = []
+#
+#   # For every lookback window...
+#   for lookback in DNNAlgo.LOOKBACKS:
+#     # Shift the data for this lookback
+#     lookback_data = data.shift(lookback - 1)
+#
+#     tmp = pd.DataFrame()
+#
+#     # Add key values
+#     tmp['O%i' % (lookback,)] = lookback_data['Open']
+#     tmp['H%i' % (lookback,)] = lookback_data['High']
+#     tmp['L%i' % (lookback,)] = lookback_data['Low']
+#     tmp['C%i' % (lookback,)] = lookback_data['Close']
+#     tmp['A%i' % (lookback,)] = lookback_data['Adj Close']
+#     tmp['V%i' % (lookback,)] = lookback_data['Volume']
+#
+#     # Calculate measures over a rolling window
+#     columns = list(tmp.columns.values)
+#     for period in DNNAlgo.PERIODS:
+#       for column in columns:
+#         rolling = tmp[column].rolling(window=period)
+#         tmp['SMA%i_%s' % (period, column)] = rolling.mean()
+#         tmp['MAX%i_%s' % (period, column)] = rolling.max()
+#         tmp['MIN%i_%s' % (period, column)] = rolling.min()
+#         tmp['STD%i_%s' % (period, column)] = rolling.std()
+#
+#     outputs.append(tmp)
+#
+#   outputs = pd.DataFrame().join(outputs, how='outer')
+#
+#   # Determine action
+#   outputs['action'] = (data['Open'].shift(-1) > data['Open']).astype(int)
+#
+#   # Clean NAs
+#   outputs = outputs.dropna()
+#
+#   # Save!
+#   shuffled = outputs.sample(frac=1).round(6)
+#   shuffled.index.name = 'Date'
+#   count = int(len(shuffled) * 0.8)
+#
+#   # Training set
+#   training_filename = training_filename_for(name)
+#   shuffled[:count].to_csv(training_filename)
+#
+#   # Testing set
+#   test_filename = test_filename_for(name)
+#   shuffled[count:].to_csv(test_filename)
+#
+#   return outputs
 

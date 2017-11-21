@@ -212,4 +212,4 @@ def train():
 # Run pre-set-ups
 if __name__ == "__main__":
   client = robinhood.Client()
-  tsla = algo.DNNAlgo('TSLA')
+#   tsla = algo.DNNAlgo('TSLA')
