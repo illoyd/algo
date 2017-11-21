@@ -200,11 +200,11 @@ class DNNAlgo(object):
 
     # Create a training set, if needed
     if not training_set:
-      training_set = pd.read_csv("./data/" + self.name + "_train.csv")
+      training_set = training_data_for(self.name)
 
     # Create a testing set, if needed
     if not test_set:
-      test_set = pd.read_csv("./data/" + self.name + "_test.csv")
+      test_set = test_data_for(self.name)
 
     # Configure classifier
     feature_cols = [tf.feature_column.numeric_column(k) for k in self.FEATURES]

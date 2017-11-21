@@ -115,3 +115,7 @@ orders.csv
 orders-analysis.csv
 
 orders-analysis.xlsx
+
+data/test/TSLA.csv
+
+data/training/TSLA.csv
