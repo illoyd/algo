@@ -2,6 +2,8 @@
 virtualenv/
 .env
 tmp/
+data/test/
+data/training/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files
