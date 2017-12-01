@@ -23,6 +23,8 @@ import algo
 logging.basicConfig(level=logging.INFO)
 
 MAX_IN_ONE = 1.0 / 12.0
+EQUITY_UTILISATION = 0.98
+BUY_LIMIT = (1.0 - EQUITY_UTILISATION) / 2.0
 
 
 ##
@@ -118,7 +120,7 @@ def main(args = {}):
 
     # Determine available captial to play with
     logging.info('STEP 4: CAPITAL')
-    capital = (client.equity * 0.98) + client.margin
+    capital = (client.equity * EQUITY_UTILISATION) + client.margin
     logging.info('Capital: %s (equity: %s, margin: %s)', capital, client.equity, client.margin)
 
     # Get mid quotes
@@ -169,7 +171,7 @@ def main(args = {}):
     # Perform buys
     logging.info('STEP 10: BUY')
     for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
-      limit = round( mid_quotes[symbol] * 1.02, 2 )
+      limit = round( mid_quotes[symbol] * BUY_LIMIT, 2 )
       logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
       if execute:
         response = client.buy(symbol, abs(delta), limit)
