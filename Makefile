@@ -59,3 +59,6 @@ get-orders:
 
 i:
 	python -i .
+
+logs:
+	bx wsk activation logs --last
