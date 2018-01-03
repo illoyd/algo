@@ -43,8 +43,10 @@ class SharpeAlgo(Algo):
   ##
   # Initialise with a client object
   # @client A robinhood.Client object
-  def __init__(self, client):
+  def __init__(self, client, lookback = 21, min_lookback = 5):
     self.client = client
+    self.lookback = lookback
+    self.min_lookback = min_lookback
 
   ##
   # Get all prices for the given universe
@@ -69,7 +71,7 @@ class SharpeAlgo(Algo):
 
     collected_weights = []
 
-    while len(prices.index) >= 3:
+    while len(prices.index) >= self.min_lookback:
       weights, sharpe = self._calculate_target_weights_inner(prices)
       weights['(SHARPE)'] = sharpe
       weights.name = len(prices.index)
@@ -107,10 +109,9 @@ class UniverseSharpeAlgo(SharpeAlgo):
   ##
   # Create a new defined-universe Sharpe algo
   # @universe An iterable list of symbols representing the universe
-  def __init__(self, client, universe, lookback=21):
-    super().__init__(client)
+  def __init__(self, client, universe, lookback = 21, min_lookback = 5):
+    super().__init__(client, lookback, min_lookback)
     self.universe = universe
-    self.lookback = lookback
 
   def optimise(self):
     u = self.universe
@@ -122,12 +123,6 @@ class UniverseSharpeAlgo(SharpeAlgo):
 ##
 # Sharpe Algo class - for handling the calculations!
 class WatchlistSharpeAlgo(SharpeAlgo):
-
-  ##
-  # Initialise with additional parameters for a Sharpe algo
-  def __init__(self, client, lookback = 21):
-    super().__init__(client)
-    self.lookback = lookback
 
   ##
   # Optimise
@@ -290,4 +285,3 @@ def test_data_for(name):
 #   shuffled[count:].to_csv(test_filename)
 #
 #   return outputs
-
