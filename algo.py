@@ -43,7 +43,7 @@ class SharpeAlgo(Algo):
   ##
   # Initialise with a client object
   # @client A robinhood.Client object
-  def __init__(self, client, lookback = 21, min_lookback = 5):
+  def __init__(self, client, lookback = 21, min_lookback = 7):
     self.client = client
     self.lookback = lookback
     self.min_lookback = min_lookback
@@ -82,7 +82,7 @@ class SharpeAlgo(Algo):
       prices = prices[1:]
 
     logging.debug(pd.concat(collected_weights, axis=1).round(2))
-    logging.debug('Best days %i', best_days)
+    logging.info('Best days %i', best_days)
 
     return best_weights.drop('(SHARPE)')
 
@@ -109,7 +109,7 @@ class UniverseSharpeAlgo(SharpeAlgo):
   ##
   # Create a new defined-universe Sharpe algo
   # @universe An iterable list of symbols representing the universe
-  def __init__(self, client, universe, lookback = 21, min_lookback = 5):
+  def __init__(self, client, universe, lookback = 21, min_lookback = 9):
     super().__init__(client, lookback, min_lookback)
     self.universe = universe
 
