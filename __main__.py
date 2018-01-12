@@ -26,6 +26,8 @@ MAX_IN_ONE = 1.0 / 12.0
 EQUITY_UTILISATION = 0.98
 BUY_LIMIT = 1.0 + ( (1.0 - EQUITY_UTILISATION) / 2.0 )
 
+SECONDARY_MAX_IN_ONE = 3.0 / 4.0
+
 
 ##
 # Main entry point for this cloud function
@@ -102,9 +104,11 @@ def main(args = {}):
       # Merge primary and secondary
       # a. Calculate Primary's unused portion of portfolio
       # b. Scale Secondary to fit unused portfolio
-      # c. Add weights together
+      # c. Do not allow any Secondary to exceed max (c. 3/4)
+      # d. Add weights together
       if primary_weights.any():
         secondary_weights *= (1.0 - primary_weights.sum())
+        secondary_weights[secondary_weights > SECONDARY_MAX_IN_ONE] = SECONDARY_MAX_IN_ONE
       target_portfolio_weights = primary_weights.add(secondary_weights, fill_value=0.0)
 
     # Short circuit if no target portfolio is found!
