@@ -80,10 +80,12 @@ def main(args = {}):
       # a. Unwrap weights
       # b. Add all weights together
       # c. Re-scale to 1.0
+      # d. Limit to 3/4 of portfolio
       if secondary_weights:
         secondary_weights = [ future.result() for future in secondary_weights ]
         secondary_weights = functools.reduce( (lambda a, b: a.add(b, fill_value=0.0)), secondary_weights )
         secondary_weights /= secondary_weights.sum()
+        secondary_weights[secondary_weights > SECONDARY_MAX_IN_ONE] = SECONDARY_MAX_IN_ONE
       else:
         secondary_weights = pd.Series()
 
@@ -104,11 +106,9 @@ def main(args = {}):
       # Merge primary and secondary
       # a. Calculate Primary's unused portion of portfolio
       # b. Scale Secondary to fit unused portfolio
-      # c. Do not allow any Secondary to exceed max (c. 3/4)
-      # d. Add weights together
+      # c. Add weights together
       if primary_weights.any():
         secondary_weights *= (1.0 - primary_weights.sum())
-        secondary_weights[secondary_weights > SECONDARY_MAX_IN_ONE] = SECONDARY_MAX_IN_ONE
       target_portfolio_weights = primary_weights.add(secondary_weights, fill_value=0.0)
 
     # Short circuit if no target portfolio is found!
