@@ -24,6 +24,19 @@ class Algo(object):
   def optimise(self):
     return None
 
+##
+# A defined algo uses pre-determined symbols set to a pre-determined holding.
+# Useful for holding symbols for long-term
+class DefinedAlgo(Algo):
+
+  def __init__(self, symbols = [], holding = 1.0):
+    self.symbols = symbols
+    self.holding = holding / len(self.symbols)
+
+  def optimise(self):
+    portfolio = { symbol: self.holding for symbol in self.symbols }
+    return pd.Series(portfolio)
+
 
 ##
 # Client Algo, which uses a robinhood.Client object
@@ -37,7 +50,7 @@ class ClientAlgo(Algo):
 
 
 ##
-# Client Algo, which uses a robinhood.Client object
+# SharpeAlgo, which calculates the optimal Sharpe portfolio given a set of assets
 class SharpeAlgo(Algo):
 
   ##

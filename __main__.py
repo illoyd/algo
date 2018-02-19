@@ -26,7 +26,7 @@ MAX_IN_ONE = 1.0 / 12.0
 EQUITY_UTILISATION = 0.98
 BUY_LIMIT = 1.0 + ( (1.0 - EQUITY_UTILISATION) / 2.0 )
 
-SECONDARY_MAX_IN_ONE = 3.0 / 4.0
+SECONDARY_MAX_IN_ONE = 5.0 / 6.0
 
 
 ##
@@ -54,7 +54,9 @@ def main(args = {}):
   with robinhood.Client(username = username, password = password, account_id = account_id) as client:
 
     # Assemble algos
-    PRIMARY = []
+    PRIMARY = [
+      algo.DefinedAlgo([ 'TSLA', 'NFLX', 'SBUX', 'FB', 'TWTR', 'NVDA' ], 0.30)
+    ]
     SECONDARY = [
       algo.WatchlistSharpeAlgo(client, lookback = 21)
     ]
@@ -67,7 +69,8 @@ def main(args = {}):
         client.logout()
         return {
           "status": "not run",
-          "reason": "markets closed"
+          "reason": "markets closed",
+          "success": False
         }
 
     # Multithreading goodness
@@ -80,7 +83,7 @@ def main(args = {}):
       # a. Unwrap weights
       # b. Add all weights together
       # c. Re-scale to 1.0
-      # d. Limit to 3/4 of portfolio
+      # d. Limit individual entries to no more than SECONDARY MAX (currently 5/6ths)
       if secondary_weights:
         secondary_weights = [ future.result() for future in secondary_weights ]
         secondary_weights = functools.reduce( (lambda a, b: a.add(b, fill_value=0.0)), secondary_weights )
