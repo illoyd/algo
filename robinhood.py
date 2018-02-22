@@ -418,3 +418,6 @@ class Watchlist(resourceful.Collection):
 class Watchlists(resourceful.Collection):
   ENDPOINT = 'watchlists/'
   INSTANCE_CLASS = Watchlist
+
+  def create(self, name):
+    return self.post(None, data={'name': name})
