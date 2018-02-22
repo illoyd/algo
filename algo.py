@@ -27,7 +27,7 @@ class Algo(object):
 ##
 # A defined algo uses pre-determined symbols set to a pre-determined holding.
 # Useful for holding symbols for long-term
-class DefinedAlgo(Algo):
+class UniverseAlgo(Algo):
 
   def __init__(self, symbols = [], holding = 1.0):
     self.symbols = symbols

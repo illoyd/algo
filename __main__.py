@@ -55,7 +55,7 @@ def main(args = {}):
 
     # Assemble algos
     PRIMARY = [
-      algo.DefinedAlgo([ 'TSLA', 'NFLX', 'SBUX', 'FB', 'TWTR', 'NVDA' ], 0.30)
+      algo.UniverseAlgo([ 'TSLA', 'NFLX', 'SBUX', 'FB', 'TWTR', 'NVDA' ], 0.30)
     ]
     SECONDARY = [
       algo.WatchlistSharpeAlgo(client, lookback = 21)
