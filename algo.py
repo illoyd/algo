@@ -107,7 +107,10 @@ class SharpeAlgo(Algo):
 
     # Run the tangency optimiser; on failure, return an empty series and a 0 sharpe.
     try:
-        w = helper.tangency_portfolio(covariance, expected_returns)
+        #w = helper.tangency_portfolio(covariance, expected_returns)
+        w = helper.optimise_sharpe_portfolio(returns, covariance, expected_returns)
+        logging.debug(w)
+        w = pd.Series(w, index=expected_returns.index)
         return (w, helper.annualized_sharpe(returns, covariance, w))
 
     except ValueError as e:
@@ -152,6 +155,7 @@ class WatchlistSharpeAlgo(SharpeAlgo):
     universe = self.client.watchlist().symbols()
     logging.info('Found %s', ', '.join(universe))
     return universe
+
 
 def filename_for(kind, name):
   return "./data/%s/%s.csv" % ( kind, name, )

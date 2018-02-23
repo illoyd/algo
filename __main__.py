@@ -20,7 +20,7 @@ import robinhood
 import algo
 
 # Activate logging!
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 MAX_IN_ONE = 1.0 / 12.0
 EQUITY_UTILISATION = 0.98
@@ -221,4 +221,6 @@ def train():
 # Run pre-set-ups
 if __name__ == "__main__":
   client = robinhood.Client()
+  a = algo.WatchlistSharpeAlgo(client, lookback = 21)
+  a.optimise()
 #   tsla = algo.DNNAlgo('TSLA')

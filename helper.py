@@ -3,6 +3,8 @@ import sys
 import numpy as np
 import pandas as pd
 import math
+import scipy
+from scipy import optimize
 import cvxopt as opt
 import cvxopt.solvers as optsolvers
 import re
@@ -35,6 +37,23 @@ def annualized_sharpe(returns, covariance, weights):
   portfolio_return = np.sum(returns.mean() * weights) * 252
   portfolio_stddev = np.sqrt( np.dot( weights.T, np.dot(covariance, weights) ) * np.sqrt(252) )
   return portfolio_return / portfolio_stddev
+
+
+def optimise_annualized_sharpe(weights, returns, covariance, labels):
+  weights = pd.Series(weights, index=labels)
+  return -annualized_sharpe(returns, covariance, weights)
+
+
+def optimise_sharpe_portfolio(returns, covariance, expected_returns):
+  # Starting weights are the returns
+  labels = expected_returns.index
+  results = scipy.optimize.basinhopping(
+    optimise_annualized_sharpe,
+    expected_returns.values,
+    minimizer_kwargs = { 'args': (returns, covariance, labels) }
+  )
+  return results
+
 
 ##
 # Calculate a tangency portfolio
