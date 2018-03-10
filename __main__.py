@@ -185,7 +185,19 @@ def main(args = {}):
         if response.status_code == requests.codes.ok:
           logging.info('    Ok! Order is %s', response.json()['state'])
         else:
-          logging.warn(response.text)
+          # Parse error message; if cap'ed, re-run a buy
+          search = re.search('[Yy]ou can only purchase (\d+) shares', response.text)
+          if m.group(0):
+            logging.info('    Limited! Can purchase %s', m.group(0))
+            delta = m.group(0)
+            response = client.buy(symbol, abs(delta), limit)
+            if response.status_code == requests.codes.ok:
+              logging.info('    Ok! Order is %s', response.json()['state'])
+            else:
+              logging.warn(response.text)
+          else:
+            logging.warn(response.text)
+
 
   # Boring stuff!
   return {
