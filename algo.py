@@ -1,18 +1,6 @@
 # Standard library imports
-import sys
-import numpy as np
 import pandas as pd
-# import tensorflow as tf
-import math
-import cvxopt as opt
-import cvxopt.solvers as optsolvers
-import datetime
-import json
-import requests
-import dateutil
-import re
 import logging
-import itertools
 
 import helper
 
@@ -21,163 +9,172 @@ import helper
 # Algo base, for working with signals and other items
 class Algo(object):
 
-  def optimise(self):
-    return None
+    def optimise(self):
+        return None
+
 
 ##
 # A defined algo uses pre-determined symbols set to a pre-determined holding.
 # Useful for holding symbols for long-term
 class UniverseAlgo(Algo):
 
-  def __init__(self, symbols = [], holding = 1.0):
-    self.symbols = symbols
-    self.holding = holding / len(self.symbols)
+    def __init__(self, symbols=[], holding=1.0):
+        self.symbols = symbols
+        self.holding = holding / len(self.symbols)
 
-  def optimise(self):
-    portfolio = { symbol: self.holding for symbol in self.symbols }
-    return pd.Series(portfolio)
+    def optimise(self):
+        portfolio = {symbol: self.holding for symbol in self.symbols}
+        return pd.Series(portfolio)
 
 
 ##
 # Client Algo, which uses a robinhood.Client object
 class ClientAlgo(Algo):
 
-  ##
-  # Initialise with a client object
-  # @client A robinhood.Client object
-  def __init__(self, client):
-    self.client = client
+    ##
+    # Initialise with a client object
+    # @client A robinhood.Client object
+    def __init__(self, client):
+        self.client = client
 
 
 ##
 # SharpeAlgo, which calculates the optimal Sharpe portfolio given a set of assets
 class SharpeAlgo(Algo):
 
-  ##
-  # Initialise with a client object
-  # @client A robinhood.Client object
-  def __init__(self, client, lookback = 21, min_lookback = 7):
-    self.client = client
-    self.lookback = lookback
-    self.min_lookback = min_lookback
+    ##
+    # Initialise with a client object
+    # @client A robinhood.Client object
+    def __init__(self, client, lookback=21, min_lookback=7):
+        self.client = client
+        self.lookback = lookback
+        self.min_lookback = min_lookback
 
-  ##
-  # Get all prices for the given universe
-  # @returns A pandas dataframe of prices; vertical axis are dates and horizontal axis are symbols
-  def prices(self, universe):
-    prices = self.client.historical_prices(*universe).iloc[-self.lookback:]
-    logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
-    logging.debug(prices)
-    return prices
+    ##
+    # Get all prices for the given universe
+    # @returns A pandas dataframe of prices; vertical axis are dates and horizontal axis are symbols
+    def prices(self, universe):
+        prices = self.client.historical_prices(*universe).iloc[-self.lookback:]
+        logging.info('Found prices %s - %s for %s', prices.index[0], prices.index[-1], ", ".join(list(prices.columns)))
+        logging.debug(prices)
+        return prices
 
-  def weights(self, prices):
-    target_weights = self._calculate_target_weights(prices)
-    logging.info('Target weights: %s', ', '.join([ '{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_weights.iteritems() ]))
-    logging.debug(target_weights.round(2))
-    return target_weights
+    def weights(self, prices):
+        target_weights = self._calculate_target_weights(prices)
+        logging.info('Target weights: %s',
+                     ', '.join(['{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_weights.iteritems()]))
+        logging.debug(target_weights.round(2))
+        return target_weights
 
-  ##
-  # Calculate the optimal Sharpe portfolio
-  def _calculate_target_weights(self, prices):
-    prices = prices.astype(float)
-    best_weights, best_sharpe, best_days = None, 0.0, 0
+    ##
+    # Calculate the optimal Sharpe portfolio
+    def _calculate_target_weights(self, prices):
+        prices = prices.astype(float)
+        best_weights, best_sharpe, best_days = None, 0.0, 0
 
-    collected_weights = []
+        collected_weights = []
 
-    while len(prices.index) >= self.min_lookback:
-      weights, sharpe = self._calculate_target_weights_inner(prices)
-      weights['(SHARPE)'] = sharpe
-      weights.name = len(prices.index)
-      collected_weights.append(weights)
+        while len(prices.index) >= self.min_lookback:
+            weights, sharpe = self._calculate_target_weights_inner(prices)
+            weights['(SHARPE)'] = sharpe
+            weights.name = len(prices.index)
+            collected_weights.append(weights)
 
-      if sharpe >= best_sharpe:
-        best_weights, best_sharpe, best_days = weights, sharpe, weights.name
-      prices = prices[1:]
+            if sharpe >= best_sharpe:
+                best_weights, best_sharpe, best_days = weights, sharpe, weights.name
+            prices = prices[1:]
 
-    logging.debug(pd.concat(collected_weights, axis=1).round(2))
-    logging.info('Best days %i', best_days)
+        logging.debug(pd.concat(collected_weights, axis=1).round(2))
+        logging.info('Best days %i', best_days)
 
-    return best_weights.drop('(SHARPE)')
+        return best_weights.drop('(SHARPE)')
 
-  def _calculate_target_weights_inner(self, prices):
-    # Perform general calculations
-    expected_returns = (prices.iloc[-1] / prices.iloc[0]) - 1
-    returns = prices.pct_change()
-    covariance = returns.cov()
+    def _calculate_target_weights_inner(self, prices):
+        # Perform general calculations
+        expected_returns = (prices.iloc[-1] / prices.iloc[0]) - 1
+        returns = prices.pct_change()
+        covariance = returns.cov()
 
-    # Run the tangency optimiser; on failure, return an empty series and a 0 sharpe.
-    try:
-        w = helper.tangency_portfolio(covariance, expected_returns)
-        return (w, helper.annualized_sharpe(returns, covariance, w))
+        # Run the tangency optimiser; on failure, return an empty series and a 0 sharpe.
+        try:
+            w = helper.tangency_portfolio(covariance, expected_returns)
+            return w, helper.annualized_sharpe(returns, covariance, w)
 
-    except ValueError as e:
-        logging.error(e)
-        return (pd.Series(), 0.0)
+        except ValueError as e:
+            logging.error(e)
+            return pd.Series(), 0.0
 
 
 ##
 # Defined-Universe algo - for calculating a Sharpe portfolio for a pre-defined universe.
 class UniverseSharpeAlgo(SharpeAlgo):
 
-  ##
-  # Create a new defined-universe Sharpe algo
-  # @universe An iterable list of symbols representing the universe
-  def __init__(self, client, universe, lookback = 21, min_lookback = 9):
-    super().__init__(client, lookback, min_lookback)
-    self.universe = universe
+    ##
+    # Create a new defined-universe Sharpe algo
+    # @universe An iterable list of symbols representing the universe
+    def __init__(self, client, universe, lookback=21, min_lookback=9):
+        super().__init__(client, lookback, min_lookback)
+        self.universe = universe
 
-  def optimise(self):
-    u = self.universe
-    p = self.prices(u)
-    w = self.weights(p)
-    return w
+    def optimise(self):
+        u = self.universe
+        p = self.prices(u)
+        w = self.weights(p)
+        return w
 
 
 ##
 # Sharpe Algo class - for handling the calculations!
 class WatchlistSharpeAlgo(SharpeAlgo):
 
-  ##
-  # Optimise
-  def optimise(self):
-    u = self.universe()
-    p = self.prices(u)
-    w = self.weights(p)
-    return w
+    ##
+    # Optimise
+    def optimise(self):
+        u = self.universe()
+        p = self.prices(u)
+        w = self.weights(p)
+        return w
 
-  ##
-  # Get the universe of stocks from the Robinhood Watchlist
-  # @returns A list of symbols
-  def universe(self):
-    universe = self.client.watchlist().symbols()
-    logging.info('Found %s', ', '.join(universe))
-    return universe
+    ##
+    # Get the universe of stocks from the Robinhood Watchlist
+    # @returns A list of symbols
+    def universe(self):
+        universe = self.client.watchlist().symbols()
+        logging.info('Found %s', ', '.join(universe))
+        return universe
+
 
 def filename_for(kind, name):
-  return "./data/%s/%s.csv" % ( kind, name, )
+    return "./data/%s/%s.csv" % (kind, name,)
+
 
 def source_filename_for(symbol):
-  return filename_for('', symbol)
+    return filename_for('', symbol)
+
 
 def training_filename_for(symbol):
-  return filename_for('training', symbol)
+    return filename_for('training', symbol)
+
 
 def test_filename_for(symbol):
-  return filename_for('test', symbol)
+    return filename_for('test', symbol)
+
 
 def data_for(kind, name):
-  filename = filename_for(kind, name)
-  return pd.read_csv(filename, index_col = 0)
+    filename = filename_for(kind, name)
+    return pd.read_csv(filename, index_col=0)
+
 
 def source_data_for(name):
-  return data_for('', name)
+    return data_for('', name)
+
 
 def training_data_for(name):
-  return data_for('training', name)
+    return data_for('training', name)
+
 
 def test_data_for(name):
-  return data_for('test', name)
-
+    return data_for('test', name)
 
 ##
 # Machine Learning! oh boy...
