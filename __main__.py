@@ -52,6 +52,7 @@ def main(args = {}):
 
   # Activate a Robinhood client
   with robinhood.Client(username = username, password = password, account_id = account_id) as client:
+    order_manager = robinhood.OrderManager(client)
 
     # Assemble algos
     PRIMARY = [
@@ -162,13 +163,8 @@ def main(args = {}):
     # Perform sells
     logging.info('STEP 9: SELL')
     for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
-      logging.info('  Selling %s: %s @ %s', symbol, abs(delta), 'market')
-      if execute:
-        response = client.sell(symbol, abs(delta))
-        if response.status_code == requests.codes.ok:
-          logging.info('    Ok! Order is %s', response.json()['state'])
-        else:
-          logging.warn(response.text)
+      order_manager.sell(symbol, abs(delta))
+    order_manager.execute()
 
     # Sleep a bit...
     if execute:
@@ -179,25 +175,8 @@ def main(args = {}):
     logging.info('STEP 10: BUY')
     for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
       limit = round( mid_quotes[symbol] * BUY_LIMIT, 2 )
-      logging.info('  Buying %s: %s @ %s', symbol, abs(delta), limit)
-      if execute:
-        response = client.buy(symbol, abs(delta), limit)
-        if response.status_code == requests.codes.ok:
-          logging.info('    Ok! Order is %s', response.json()['state'])
-        else:
-          # Parse error message; if cap'ed, re-run a buy
-          search = re.search('[Yy]ou can only purchase (\d+) shares', response.text)
-          if m.group(0):
-            logging.info('    Limited! Can purchase %s', m.group(0))
-            delta = m.group(0)
-            response = client.buy(symbol, abs(delta), limit)
-            if response.status_code == requests.codes.ok:
-              logging.info('    Ok! Order is %s', response.json()['state'])
-            else:
-              logging.warn(response.text)
-          else:
-            logging.warn(response.text)
-
+      order_manager.buy(symbol, abs(delta), limit = limit)
+    order_manager.execute()
 
   # Boring stuff!
   return {
@@ -232,5 +211,7 @@ def train():
 ##
 # Run pre-set-ups
 if __name__ == "__main__":
-  client = robinhood.Client()
+  c = client = robinhood.Client()
+  om = robinhood.OrderManager(c)
+
 #   tsla = algo.DNNAlgo('TSLA')

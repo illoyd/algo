@@ -15,8 +15,40 @@ import cvxopt.solvers as optsolvers
 import datetime
 import dateutil
 import logging
+from collections import deque
 
 import helper
+
+##
+# Base class for exceptions in this module
+class Error(Exception):
+  pass
+
+##
+# Base order error class
+class OrderError(Error):
+
+  def __init__(self, message):
+    self.message = message
+
+
+##
+class TooManySharesError(OrderError):
+
+  def __init__(self, message, symbol, quantity):
+    super().__init__(message)
+    self.symbol = symbol
+    self.quantity = float(quantity)
+
+
+class BuyingTooManySharesError(TooManySharesError):
+  pass
+
+
+##
+class SellingTooManySharesError(TooManySharesError):
+  pass
+
 
 ##
 # The Robinhood interface, built from the ground up sadly!
@@ -205,6 +237,22 @@ class Client(object):
   # Issue a buy order
   # @return Whatever!
   def buy(self, symbol, quantity, price):
+    response = self._buy(symbol, quantity, price)
+
+    # If not successful...
+    if response.status_code != requests.codes.ok:
+      # Check if buying too many shares
+      search = re.search('[Yy]ou can only purchase (\d+) shares', response.text)
+      if search:
+        raise BuyingTooManySharesError(response.text, symbol, search.group(1))
+
+      # Otherwise, raise general error message
+      else:
+        raise OrderError(response.text)
+
+    return response
+
+  def _buy(self, symbol, quantity, price):
     data = {
       'account': self.account_uri(),
       'instrument': self.instrument(symbol)['url'],
@@ -252,6 +300,78 @@ class Client(object):
 
   def are_markets_open(self, date = None):
     return self.nyse_market.is_open(date)
+
+
+##
+# Generic Order
+class Order(object):
+  def __init__(self, symbol, quantity, limit = None, stop = None):
+    self.symbol = symbol
+    self.quantity = quantity
+    self.limit = limit
+    self.stop = stop
+
+##
+# A buy order
+class BuyOrder(Order):
+  pass
+
+##
+# A sell order
+class SellOrder(Order):
+  pass
+
+
+##
+# The Order Manager class, for managing the buying and selling orders of an account.
+class OrderManager(object):
+
+  def __init__(self, client):
+    self.client = client
+    self.orders = deque()
+
+  def add(self, order):
+    self.orders.append(order)
+
+  def buy(self, symbol, quantity, limit = None):
+    self.add(BuyOrder(symbol, quantity, limit = limit))
+
+  def sell(self, symbol, quantity, stop = None):
+    self.add(SellOrder(symbol, quantity, stop = stop))
+
+  def execute(self):
+    while self.orders:
+      order = self.orders.popleft()
+      self._execute_order(order)
+
+  def _execute_order(self, order):
+    logging.info('  %s %s: %s @ %s', self._humanize_order(order), order.symbol, abs(order.quantity), (order.limit or order.stop or 'market'))
+    try:
+      if isinstance(order, BuyOrder):
+        response = self.client.buy(order.symbol, order.quantity, order.limit)
+      elif isinstance(order, SellOrder):
+        response = self.client.sell(order.symbol, order.quantity)
+
+    except BuyingTooManySharesError as error:
+      logging.warn('    May only buy %s shares of %s', error.quantity, error.symbol)
+      self.buy(order.symbol, error.quantity, order.limit)
+
+    except SellingTooManySharesError as error:
+      logging.warn('    May only sell %s shares of %s', error.quantity, error.symbol)
+      self.sell(order.symbol, error.quantity, order.stop)
+
+    except OrderError as error:
+      logging.error('Unexpected order error: %s', error.message)
+
+    else:
+      logging.info('    Ok! Order is %s', response.json()['state'])
+
+  def _humanize_order(self, order):
+    if isinstance(order, BuyOrder):
+      return "Buying"
+    elif isinstance(order, SellOrder):
+      return "Selling"
+    return str(order)
 
 
 class Account(resourceful.Instance):
