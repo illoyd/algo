@@ -23,7 +23,7 @@ import algo
 logging.basicConfig(level=logging.INFO)
 
 MAX_IN_ONE = 1.0 / 12.0
-EQUITY_UTILISATION = 0.98
+EQUITY_UTILISATION = 0.99
 BUY_LIMIT = 1.0 + ( (1.0 - EQUITY_UTILISATION) / 2.0 )
 
 SECONDARY_MAX_IN_ONE = 5.0 / 6.0
