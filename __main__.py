@@ -31,8 +31,8 @@ def main(args={}):
     username = args.get('username', os.environ.get('ROBINHOOD_USERNAME'))
     password = args.get('password', os.environ.get('ROBINHOOD_PASSWORD'))
     account_id = args.get('account', os.environ.get('ROBINHOOD_ACCOUNTID'))
-    market_check = (args.get('market_check', 'yes') == 'yes')
-    execute = (args.get('execute', 'no') == 'yes')
+    market_check = helper.truthy(args.get('market_check', True))
+    execute = helper.truthy(args.get('execute', False))
 
     # Preamble!
     logging.info('Beginning algo with options:')

@@ -10,6 +10,14 @@ import pandas as pd
 # A symbol look-up table. Not used yet.
 symbol_table = {}
 
+
+##
+# A truthy test, for converting input (user, command line, etc.) into a truth value
+# Returns true if value is '1' or 'on', or starts with 'y' (for yes) or 't' (for true)
+def truthy(value: object) -> bool:
+    value = str(value).lower().strip()
+    return value in {'1', 'on'} or value[0] in {'y', 't'}
+
 ##
 # Take the first non-None value from a given list
 # @args A list of items to compare
