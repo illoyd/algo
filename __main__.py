@@ -113,7 +113,7 @@ def main(args={}):
 
         # Short circuit if no target portfolio is found!
         if target_portfolio_weights.empty:
-            return {'status': 'error', 'reason': 'No optimal portfolio found.'}
+            return {'status': 'error', 'reason': 'No optimal portfolio found.', 'success': False}
 
         logging.info('Target weights: %s',
                      ', '.join(['{}: {:0.1f}%'.format(s, w * 100.0) for s, w in target_portfolio_weights.iteritems()]))
