@@ -1,11 +1,10 @@
 # Standard library imports
-import sys
-import numpy as np
-import pandas as pd
-import math
+import re
+
 import cvxopt as opt
 import cvxopt.solvers as optsolvers
-import re
+import numpy as np
+import pandas as pd
 
 ##
 # A symbol look-up table. Not used yet.
