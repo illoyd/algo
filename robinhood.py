@@ -133,11 +133,12 @@ class Client(object):
 
         return account
 
-    ##
-    # Get the current total equity, which is cash + held assets
-    # @return Float representing total equity
     @property
-    def equity(self):
+    def equity(self) -> float:
+        """Get the current total equity, which is cash + held assets
+
+        :return: a float representing the value of cash and held assets
+        """
         return float(self.portfolio()['equity'])
 
     ##
