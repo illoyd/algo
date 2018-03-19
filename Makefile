@@ -34,7 +34,7 @@ create-trigger:
 	# Create a trigger to run at 10:30 EST (15:30 UTC)
 	bx wsk trigger create $(trigger_name) \
 		--feed /whisk.system/alarms/alarm \
-    --param cron "0 30 15 * * 1-5" \
+    --param cron "0 30 14 * * 1-5" \
 		-p execute yes
     # --param maxTriggers 1
 
