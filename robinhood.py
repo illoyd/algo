@@ -243,7 +243,7 @@ class Client(object):
             # Check if buying too many shares
             search = re.search('[Yy]ou can only purchase (\d+) shares', response.text)
             if search:
-                raise BuyingTooManySharesError(response.text, symbol, search.group(1))
+                raise BuyingTooManySharesError(symbol, search.group(1), response.text)
 
             # Otherwise, raise general error message
             else:
