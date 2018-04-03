@@ -48,10 +48,10 @@ def main(args={}):
 
         # Assemble algos
         primary_algos = [
-            algo.UniverseAlgo(['TSLA', 'NFLX', 'SBUX', 'FB', 'TWTR', 'NVDA'], 0.30)
+            algo.WatchlistAlgo(client, 0.40)
         ]
         secondary_algos = [
-            algo.WatchlistSharpeAlgo(client, lookback=21)
+            algo.UniverseSharpeAlgo(['SPY', 'TLT', 'HYG'], lookback=21)
         ]
 
         # Check if markets are open
