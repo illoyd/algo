@@ -39,7 +39,20 @@ class UniverseAlgo(Algo):
 
 
 ##
+# A defined algo uses pre-determined symbols set to a pre-determined holding.
+# Useful for holding symbols for long-term
+class WatchlistAlgo(ClientAlgo):
 
+    def __init__(self, client, holding=1.0):
+        super().__init__(client)
+        self.holding = holding / len(self.symbols)
+
+    def optimise(self):
+        portfolio = {symbol: self.holding for symbol in self.symbols()}
+        return pd.Series(portfolio)
+
+    def symbols(self):
+        return self.client.watchlist().symbols()
 
 
 ##
