@@ -51,7 +51,7 @@ def main(args={}):
             algo.WatchlistAlgo(client, 0.40)
         ]
         secondary_algos = [
-            algo.UniverseSharpeAlgo(['SPY', 'TLT', 'HYG'], lookback=21)
+            algo.UniverseSharpeAlgo(client, ['SPY', 'TLT', 'HYG'], lookback=21)
         ]
 
         # Check if markets are open
