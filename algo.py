@@ -45,10 +45,11 @@ class WatchlistAlgo(ClientAlgo):
 
     def __init__(self, client, holding=1.0):
         super().__init__(client)
-        self.holding = holding / len(self.symbols)
+        self._symbols = self.symbols()
+        self.holding = holding / len(self._symbols)
 
     def optimise(self):
-        portfolio = {symbol: self.holding for symbol in self.symbols()}
+        portfolio = {symbol: self.holding for symbol in self._symbols}
         return pd.Series(portfolio)
 
     def symbols(self):
