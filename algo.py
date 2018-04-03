@@ -24,6 +24,7 @@ class ClientAlgo(Algo):
         self.client = client
 
 
+##
 # A defined algo uses pre-determined symbols set to a pre-determined holding.
 # Useful for holding symbols for long-term
 class UniverseAlgo(Algo):
@@ -43,13 +44,13 @@ class UniverseAlgo(Algo):
 
 ##
 # SharpeAlgo, which calculates the optimal Sharpe portfolio given a set of assets
-class SharpeAlgo(Algo):
+class SharpeAlgo(ClientAlgo):
 
     ##
     # Initialise with a client object
     # @client A robinhood.Client object
     def __init__(self, client, lookback=21, min_lookback=7):
-        self.client = client
+        super().__init__(client)
         self.lookback = lookback
         self.min_lookback = min_lookback
 
