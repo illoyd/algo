@@ -14,6 +14,16 @@ class Algo(object):
 
 
 ##
+# Client Algo, which uses a robinhood.Client object
+class ClientAlgo(Algo):
+
+    ##
+    # Initialise with a client object
+    # @client A robinhood.Client object
+    def __init__(self, client):
+        self.client = client
+
+
 # A defined algo uses pre-determined symbols set to a pre-determined holding.
 # Useful for holding symbols for long-term
 class UniverseAlgo(Algo):
@@ -28,14 +38,7 @@ class UniverseAlgo(Algo):
 
 
 ##
-# Client Algo, which uses a robinhood.Client object
-class ClientAlgo(Algo):
 
-    ##
-    # Initialise with a client object
-    # @client A robinhood.Client object
-    def __init__(self, client):
-        self.client = client
 
 
 ##
