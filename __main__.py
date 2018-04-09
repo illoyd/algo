@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.INFO)
 
 MAX_IN_ONE = 1.0 / 12.0
 EQUITY_UTILISATION = 0.99
+MARGIN_UTILISATION = 0.0
 BUY_LIMIT = 1.0 + ((1.0 - EQUITY_UTILISATION) / 2.0)
 
 SECONDARY_MAX_IN_ONE = 5.0 / 6.0
@@ -121,7 +122,7 @@ def main(args={}):
 
         # Determine available captial to play with
         logging.info('STEP 4: CAPITAL')
-        capital = (client.equity * EQUITY_UTILISATION) + client.margin
+        capital = (client.equity * EQUITY_UTILISATION) + (client.margin * MARGIN_UTILISATION)
         logging.info('Capital: %s (equity: %s, margin: %s)', capital, client.equity, client.margin)
 
         # Get mid quotes
