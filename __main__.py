@@ -158,7 +158,8 @@ def main(args={}):
         logging.info('STEP 9: SELL')
         for symbol, delta in portfolio_delta[portfolio_delta < 0].iteritems():
             order_manager.sell(symbol, abs(delta))
-        order_manager.execute()
+        if execute:
+            order_manager.execute()
 
         # Sleep a bit...
         if execute:
@@ -170,7 +171,8 @@ def main(args={}):
         for symbol, delta in portfolio_delta[portfolio_delta > 0].iteritems():
             limit = round(mid_quotes[symbol] * BUY_LIMIT, 2)
             order_manager.buy(symbol, abs(delta), limit=limit)
-        order_manager.execute()
+        if execute:
+            order_manager.execute()
 
     # Boring stuff!
     return {
