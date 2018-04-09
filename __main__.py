@@ -49,7 +49,7 @@ def main(args={}):
 
         # Assemble algos
         primary_algos = [
-            algo.WatchlistAlgo(client, 0.40)
+            algo.WatchlistAlgo(client, 0.50)
         ]
         secondary_algos = [
             algo.UniverseSharpeAlgo(client, ['SPY', 'TLT', 'HYG'], lookback=21)
