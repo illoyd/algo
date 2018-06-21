@@ -15,12 +15,12 @@ import robinhood
 # Activate logging!
 logging.basicConfig(level=logging.INFO)
 
-MAX_IN_ONE = 1.0 / 12.0
-EQUITY_UTILISATION = 0.99
+MAX_IN_ONE = 1.0 / 8.0
+EQUITY_UTILISATION = 0.50
 MARGIN_UTILISATION = 1.0
-BUY_LIMIT = 1.0 + ((1.0 - EQUITY_UTILISATION) / 2.0)
+BUY_LIMIT = 1.0 + ((1.0 - 0.99) / 2.0)
 
-SECONDARY_MAX_IN_ONE = 5.0 / 6.0
+SECONDARY_MAX_IN_ONE = 6.0 / 6.0
 
 
 ##
@@ -49,7 +49,7 @@ def main(args={}):
 
         # Assemble algos
         primary_algos = [
-            algo.WatchlistAlgo(client, 0.50)
+            algo.WatchlistAlgo(client, 0.80)
         ]
         secondary_algos = [
             algo.UniverseSharpeAlgo(client, ['SPY', 'TLT', 'HYG'], lookback=21)
