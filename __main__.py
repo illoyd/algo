@@ -16,7 +16,7 @@ import robinhood
 logging.basicConfig(level=logging.INFO)
 
 MAX_IN_ONE = 1.0 / 8.0
-EQUITY_UTILISATION = 0.50
+EQUITY_UTILISATION = 1.0
 MARGIN_UTILISATION = 1.0
 BUY_LIMIT = 1.0 + ((1.0 - 0.99) / 2.0)
 
