@@ -15,7 +15,7 @@ import robinhood
 # Activate logging!
 logging.basicConfig(level=logging.INFO)
 
-MAX_IN_ONE = 1.0 / 12.0
+MAX_IN_ONE = 1.0 / 6.0
 EQUITY_UTILISATION = 0.99
 MARGIN_UTILISATION = 1.0
 BUY_LIMIT = 1.0 + ((1.0 - EQUITY_UTILISATION) / 2.0)
@@ -49,10 +49,10 @@ def main(args={}):
 
         # Assemble algos
         primary_algos = [
-            algo.WatchlistAlgo(client, 0.50)
+            algo.WatchlistAlgo(client, 1.0)
         ]
         secondary_algos = [
-            algo.UniverseSharpeAlgo(client, ['SPY', 'TLT', 'HYG'], lookback=21)
+            # algo.UniverseSharpeAlgo(client, ['SPY', 'TLT', 'HYG'], lookback=21)
         ]
 
         # Check if markets are open
@@ -178,7 +178,16 @@ def main(args={}):
     return {
         'current_portfolio': dict(current_portfolio),
         'target_portfolio': dict(target_portfolio),
-        'delta': dict(portfolio_delta)
+        'delta': dict(portfolio_delta),
+        'capital': {
+            'equity': client.equity,
+            'margin': client.margin,
+            'total': capital
+        },
+        'portfolio_value': {
+            'current': (current_portfolio * mid_quotes).sum(),
+            'target': (target_portfolio * mid_quotes).sum()
+        }
     }
 
 
