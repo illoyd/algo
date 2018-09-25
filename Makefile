@@ -28,7 +28,7 @@ build-docker:
 	&& docker push $(docker_username)/$(docker_image)
 
 update-action: zip
-	bx wsk action update $(action_name) --docker $(docker_username)/$(docker_image) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID} -p execute yes -p market_check yes
+	bx wsk action update $(action_name) --docker $(docker_username)/$(docker_image) build/$(action_name).zip -p username ${ROBINHOOD_USERNAME} -p password ${ROBINHOOD_PASSWORD} -p account ${ROBINHOOD_ACCOUNTID} -p execute yes -p market_check yes -p token "${ROBINHOOD_TOKEN}"
 
 create-trigger:
 	# Create a trigger to run at 10:30 EST (15:30 UTC)

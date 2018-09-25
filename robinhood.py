@@ -72,6 +72,17 @@ class Client(object):
             token=token
         )
 
+        # Update headers for Robinhood
+        self.api.session.headers.update({
+          "Accept": "application/json",
+          "Accept-Encoding": "gzip, deflate",
+          "Accept-Language": "en;q=1, fr;q=0.9, de;q=0.8, ja;q=0.7, nl;q=0.6, it;q=0.5",
+          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+          "X-Robinhood-API-Version": "1.0.0",
+          "Connection": "keep-alive",
+          "User-Agent": "Robinhood/823 (iPhone; iOS 7.1.2; Scale/2.00)"
+        })
+
         # Perform login
         if (not self.is_logged_in()) and username and password:
             self.login(username, password)
@@ -96,11 +107,15 @@ class Client(object):
         self.username = username
 
         # Sign in
-        data = {'username': self.username, 'password': password}
-        response = self.api.post('/api-token-auth/', data=data)
-
-        # Process response and save
-        # self.api.token = response.json()['token']
+        data = {
+          'username': self.username,
+          'password': password,
+          'expires_in': 86400,
+          'grant_type': 'password',
+          'scope': 'internal',
+          'client_id': 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
+        }
+        response = self.api.post('/oauth2/token/', data=data)
         pass
 
     def logout(self):

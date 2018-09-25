@@ -80,13 +80,13 @@ class TokenAPI(APIProxy):
   def token(self, val):
     self._token = val
     if val:
-      self.api.session.headers.update({'Authorization': 'Token ' + val})
+      self.api.session.headers.update({'Authorization': 'Bearer ' + val})
     else:
       self.api.session.headers.pop('Authorization', None)
 
   def assign_token_if_exists(self, response):
     if response.status_code == requests.codes.ok and response.content:
-      token = response.json().get('token', None)
+      token = response.json().get('access_token', None)
       if token:
         logging.debug('Assigning token %s', token)
         self.token = token
