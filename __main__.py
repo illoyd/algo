@@ -13,11 +13,11 @@ import helper
 import robinhood
 
 # Activate logging!
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
-MAX_IN_ONE = 1.0 / 6.0
-EQUITY_UTILISATION = 0.99
-MARGIN_UTILISATION = 1.0
+MAX_IN_ONE = 8.0 / 9.0
+EQUITY_UTILISATION = 0.0
+MARGIN_UTILISATION = 0.0
 BUY_LIMIT = 1.0 + ((1.0 - EQUITY_UTILISATION) / 2.0)
 
 SECONDARY_MAX_IN_ONE = 5.0 / 6.0
