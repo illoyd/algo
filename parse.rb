@@ -60,6 +60,11 @@ class Share
     @close_timestamp&.strftime("%H:%M:%S")
   end
 
+  def held_for
+    if @close_timestamp
+        @open_timestamp - @close_timestamp
+    end
+
 
   def to_a
     [@asset, open_date, open_time, @open_price, close_date, close_time, @close_price, profit_or_loss, profit, loss]
